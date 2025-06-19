@@ -38,5 +38,10 @@ export default {
 </script>
 
 <style scoped>
-@import './style.css';
+.login-container {
+  width: 300px;
+  margin: 100px auto;
+  text-align: center;
+  font-family: sans-serif;
+}
 </style>
