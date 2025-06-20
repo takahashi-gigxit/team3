@@ -4,7 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
 import RegisterConfirm from '../views/RegisterConfirm.vue'
-import Logout from '../views/logout.vue'
+import Logout from '../views/Logout.vue'
 
 // 一般ユーザー用
 import UserMain from '../views/UserMain.vue'

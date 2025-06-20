@@ -2,79 +2,117 @@
   <div class="attendance-page">
     <!-- 戻る＆ログアウト -->
     <div class="header">
-      <router-link class="back-link" to="/admin">&lt;&lt; 戻る</router-link>
+      <router-link class="back-link" to="/main">&lt;&lt; 戻る</router-link>
       <router-link class="logout" to="/logout">ログアウト</router-link>
     </div>
-
     <!-- タイトルと日付 -->
     <h2 class="title">勤怠画面</h2>
     <p class="date">{{ today }}</p>
-
     <!-- 出勤・退勤ボタンと時間 -->
     <div class="time-block">
-      <button class="btn" @click="punch('start')">出勤</button>
-      <span class="time">{{ startTime || '--:--' }}</span>
+      <button class="btn" @click="clockIn" :disabled="inflag">出勤</button>
+      <span class="time" >{{ startTime || '--:--' }}</span>
     </div>
     <div class="time-block">
-      <button class="btn" @click="punch('end')">退勤</button>
+      <button class="btn" @click="clockOut" :disabled="outflag">退勤</button>
       <span class="time">{{ endTime || '未打刻' }}</span>
     </div>
-
     <!-- 申請状態表示 -->
     <div class="status-block">
       <div>遅刻申請　申請中</div>
       <div>有給申請　承認済み</div>
     </div>
-
     <router-link to="/application" class="link-button">各種申請へ＞＞</router-link>
   </div>
 </template>
-
 <script>
+import axios from 'axios'
 export default {
   name: 'Attendance',
   data() {
-    const today = new Date()
+    //クリックされた年・月・日、またはその日付を取得
+    const year = this.$route.params.year || new Date().getFullYear()
+    const month = this.$route.params.month || new Date().getMonth() + 1
+    const day = this.$route.params.day || new Date().getDate()
+    //DB用に型変換（月・日で一桁のものは０を加える　6月の場合06）
+    const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const displayDate = `${year}年${month}月${day}日`
     return {
-      today: today.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }),
+      userid: 1,
+      attendance: {},
+      request: {},
+      today: displayDate,        // 画面表示用
+      punchDate: formattedDate,  // DB保存用 (yyyy-MM-dd)
       startTime: '',
-      endTime: ''
+      endTime: '',
+      inflag:false,
+      outflag:false
     }
   },
+  created(){
+    this.fetchatt();
+    this.fetchreq();
+  },
   methods: {
-    punch(type) {
-      const now = new Date().toTimeString().slice(0, 5)
-      const date = new Date().toISOString().split('T')[0] // yyyy-mm-dd
-      const time = now
-
-      fetch('http://localhost:8080/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 1, // 必要に応じてログイン情報に置き換え
-          type: type === 'start' ? '出勤' : '退勤',
-          date: date,
-          time: time
+     // 出勤ボタンのクリックイベント
+    clockIn() {
+    //   console.log("出勤時刻ositauo");
+      // "HH:mm" の形式で送信（Java側に合わせる）
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const currentTime = `${hours}:${minutes}`;
+      console.log("出勤時刻:", currentTime);
+    //   // 出勤時刻を送信
+      axios.post(`http://localhost:8080/user/attendance/clockin/${this.userid}`, { time: currentTime,date: this.punchDate })
+        .then(res => {
+          this.attendance = res.data;
+          this.startTime = currentTime;
+          console.log("出勤データ:", this.attendance);
         })
-      })
-        .then(res => res.json())
-        .then(() => {
-          if (type === 'start') {
-            this.startTime = now
-          } else {
-            this.endTime = now
-          }
-          alert(`✅ ${type === 'start' ? '出勤' : '退勤'}打刻成功: ${time}`)
+        .catch(error => {
+          console.error("出勤エラー:", error);
+        });
+    },
+    // // 退勤ボタンのクリックイベント
+    clockOut() {
+    //   console.log("退勤時刻ositauo");
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = `${hours}:${minutes}`;
+      console.log("退勤時刻:", currentTime);
+      // 退勤時刻を送信
+      axios.post(`http://localhost:8080/user/attendance/clockout/${this.userid}`, { time: currentTime ,date: this.punchDate })
+        .then(res => {
+          this.attendance = res.data;
+          this.endTime = currentTime;
+          console.log("退勤データ:", this.attendance);
         })
-        .catch(err => {
-          alert('❌ 打刻失敗')
-          console.error(err)
-        })
+        .catch(error => {
+          console.error("退勤エラー:", error);
+        });
+    },
+    // 出勤・退勤データを取得
+    fetchatt() {
+      axios.post(`http://localhost:8080/user/attendance/${this.userid}`, { punchDate: this.punchDate })
+        .then(res => {
+          this.attendance = res.data;
+          this.startTime = this.attendance.start_time;
+          this.endTime = this.attendance.end_time;
+          console.log("Attendance:", this.attendance);
+        });
+    },
+    fetchreq() {
+      axios.get(`http://localhost:8080/user/request/${this.userid}`)
+        .then(res => {
+          this.request = res.data;
+          console.log("Request:", this.request);
+        });
     }
   }
 }
 </script>
-
 <style scoped>
 .attendance-page {
   font-family: sans-serif;
