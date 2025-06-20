@@ -44,4 +44,42 @@ export default {
   text-align: center;
   font-family: sans-serif;
 }
+.back-link {
+  position: fixed;
+  top: 100px;
+  left: 100px;
+  font-size: 14px;
+  color: #376380;
+  z-index: 1000;
+}
+
+.login-container {
+  width: 300px;
+  margin: 100px auto;
+  text-align: center;
+  font-family: sans-serif;
+}
+
+.input-box {
+  width: 100%;
+  height: 35px;
+  margin-bottom: 10px;
+  border: 1px solid black;
+  padding: 5px;
+  font-size: 16px;
+}
+
+.error-message {
+  color: red;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.login-button {
+  padding: 5px 20px;
+  border: 1px solid black;
+  background-color: white;
+  cursor: pointer;
+}
+
 </style>

@@ -54,7 +54,7 @@ export default {
 
 .input-box {
   width: 100%;
-  height: 35px;
+  height: all;
   margin-bottom: 10px;
   border: 1px solid black;
   padding: 5px;

@@ -14,14 +14,14 @@ import { RouterView } from 'vue-router'
 
 <style scoped>
 .app-container {
+  width: 100vw;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
 }
 
-.page-content {
+.main-content {
   flex: 1;
   padding: 20px;
-  background-color: #f9f9f9;
 }
 </style>
