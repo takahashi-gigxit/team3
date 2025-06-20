@@ -2,7 +2,7 @@
   <div class="attendance-page">
     <!-- 戻る＆ログアウト -->
     <div class="header">
-      <router-link class="back-link" to="/main">&lt;&lt; 戻る</router-link>
+      <router-link class="back-link" to="/admin">&lt;&lt; 戻る</router-link>
       <router-link class="logout" to="/logout">ログアウト</router-link>
     </div>
 

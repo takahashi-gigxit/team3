@@ -1,10 +1,8 @@
-<template>
+<template> 
   <div class="calendar-container">
     <div class="header">
       <!-- ログアウトリンク -->
-      <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
-      <h2>ようこそ {{ username }} さん</h2>
-      <h3>勤怠管理</h3>
+      
       <!-- 現在の年月表示 -->
       <h4>{{ year }}年 {{ month + 1 }}月</h4>
       <!-- 月切り替えボタン -->
@@ -42,12 +40,13 @@ export default {
   data() {
     const today = new Date()
     return {
-      days: ['日', '月', '火', '水', '木', '金', '土'], // 曜日表示
+      days: ['日', '月', '火', '水', '木', '金', '土'],
       year: today.getFullYear(),
-      month: today.getMonth(), // 0 = 1月
+      month: today.getMonth(),
       username: localStorage.getItem('username') || 'ゲスト',
-      markedDates: [], // 打刻済みの日付
-      //クリックされた日付、月を保存してリンクに出す用の変数
+      
+      role: localStorage.getItem('role') || 'user',
+      markedDates: [],
       selectedMonthForRoute: null,
       selectedDayForRoute: null
     }
@@ -86,7 +85,6 @@ export default {
     }
   },
   methods: {
-    // 前の月へ
     prevMonth() {
       if (this.month === 0) {
         this.month = 11
@@ -96,7 +94,6 @@ export default {
       }
       this.fetchMarkedDates()
     },
-    // 次の月へ
     nextMonth() {
       if (this.month === 11) {
         this.month = 0
@@ -106,20 +103,14 @@ export default {
       }
       this.fetchMarkedDates()
     },
-    // 日付クリック時の処理
     handleDateClick(date) {
       if (date.outside || this.markedDates.includes(date.date)) {
         alert('この日は既に打刻済みです')
         return
       }
-      // 日付を分割して月・日をセット
       const [yearStr, monthStr, dayStr] = date.date.split('-')
-      //↑　クリックされた日付をのYYYY-MM-DDで取得しそれを「-」ごとに分けて配列に挿入
       this.selectedMonthForRoute = parseInt(monthStr, 10)
-      //　月と日を10進数に直す（10以上は問題ないが1～9が01などで取得されるのを修正）
       this.selectedDayForRoute = parseInt(dayStr, 10)
-      // ルーター遷移（名前は router 定義に合わせて）
-      // ルーター遷移（名前は router 定義に合わせて）
       this.$router.push({
         name: 'AttendanceWithDate',
         params: {
@@ -127,26 +118,7 @@ export default {
           day: this.selectedDayForRoute
         }
       })
-      // fetch('http://localhost:8080/api/attendance', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     userId: 1,
-      //     date: date.date,
-      //     type: '打刻'
-      //   })
-      // })
-      //   .then(res => res.json())
-      //   .then(() => {
-      //     alert(`:チェックマーク_緑: 打刻成功: ${date.date}`)
-      //     this.markedDates.push(date.date)
-      //   })
-      //   .catch(err => {
-      //     alert(':x: 打刻失敗')
-      //     console.error(err)
-      //   })
     },
-    // 打刻済みデータを取得（APIから）
     fetchMarkedDates() {
       const yearMonth = `${this.year}-${String(this.month + 1).padStart(2, '0')}`
       fetch(`http://localhost:8080/api/attendance?userId=1&month=${yearMonth}`)
@@ -164,6 +136,7 @@ export default {
   }
 }
 </script>
+
 <style scoped>
 .calendar-container {
   font-family: sans-serif;
@@ -203,7 +176,7 @@ export default {
   cursor: default;
 }
 .calendar td.marked {
-  background-color: #9BE7A0; /* 打刻済みの日付の背景色 */
+  background-color: #9BE7A0;
   font-weight: bold;
 }
 </style>
