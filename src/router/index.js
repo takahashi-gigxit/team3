@@ -31,6 +31,8 @@ const routes = [
   { path: '/attendance', name: 'Attendance', component: Attendance },
   { path: '/application', name: 'Application', component: Application },
   { path: '/profile/update/done', name: 'ProfileUpdateDone', component: ProfileUpdateDone },
+   { path: '/attendance/:month/:day', name: 'AttendanceWithDate', component: Attendance },
+
 
   // 管理者画面
   { path: '/admin', name: 'AdminHome', component: AdminHome },

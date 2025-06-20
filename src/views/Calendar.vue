@@ -5,17 +5,14 @@
       <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
       <h2>ようこそ {{ username }} さん</h2>
       <h3>勤怠管理</h3>
-
       <!-- 現在の年月表示 -->
       <h4>{{ year }}年 {{ month + 1 }}月</h4>
-
       <!-- 月切り替えボタン -->
       <div class="month-control">
         <button @click="prevMonth">＜</button>
         <button @click="nextMonth">＞</button>
       </div>
     </div>
-
     <!-- カレンダー表 -->
     <table class="calendar">
       <thead>
@@ -49,7 +46,10 @@ export default {
       year: today.getFullYear(),
       month: today.getMonth(), // 0 = 1月
       username: localStorage.getItem('username') || 'ゲスト',
-      markedDates: [] // 打刻済みの日付
+      markedDates: [], // 打刻済みの日付
+      //クリックされた日付、月を保存してリンクに出す用の変数
+      selectedMonthForRoute: null,
+      selectedDayForRoute: null
     }
   },
   computed: {
@@ -62,11 +62,9 @@ export default {
       const result = []
       let day = 1
       let nextMonthDay = 1
-
       for (let i = 0; i < totalCells; i++) {
         const row = Math.floor(i / 7)
         if (!result[row]) result[row] = []
-
         if (i < startDay) {
           const d = prevMonthDays - startDay + i + 1
           result[row].push({ day: d, outside: true, marked: false, date: `${this.year}-${this.month}-${d}` })
@@ -98,7 +96,6 @@ export default {
       }
       this.fetchMarkedDates()
     },
-
     // 次の月へ
     nextMonth() {
       if (this.month === 11) {
@@ -109,34 +106,46 @@ export default {
       }
       this.fetchMarkedDates()
     },
-
     // 日付クリック時の処理
     handleDateClick(date) {
       if (date.outside || this.markedDates.includes(date.date)) {
         alert('この日は既に打刻済みです')
         return
       }
-
-      fetch('http://localhost:8080/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 1,
-          date: date.date,
-          type: '打刻'
-        })
+      // 日付を分割して月・日をセット
+      const [yearStr, monthStr, dayStr] = date.date.split('-')
+      //↑　クリックされた日付をのYYYY-MM-DDで取得しそれを「-」ごとに分けて配列に挿入
+      this.selectedMonthForRoute = parseInt(monthStr, 10)
+      //　月と日を10進数に直す（10以上は問題ないが1～9が01などで取得されるのを修正）
+      this.selectedDayForRoute = parseInt(dayStr, 10)
+      // ルーター遷移（名前は router 定義に合わせて）
+      // ルーター遷移（名前は router 定義に合わせて）
+      this.$router.push({
+        name: 'AttendanceWithDate',
+        params: {
+          month: this.selectedMonthForRoute,
+          day: this.selectedDayForRoute
+        }
       })
-        .then(res => res.json())
-        .then(() => {
-          alert(`✅ 打刻成功: ${date.date}`)
-          this.markedDates.push(date.date)
-        })
-        .catch(err => {
-          alert('❌ 打刻失敗')
-          console.error(err)
-        })
+      // fetch('http://localhost:8080/api/attendance', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     userId: 1,
+      //     date: date.date,
+      //     type: '打刻'
+      //   })
+      // })
+      //   .then(res => res.json())
+      //   .then(() => {
+      //     alert(`:チェックマーク_緑: 打刻成功: ${date.date}`)
+      //     this.markedDates.push(date.date)
+      //   })
+      //   .catch(err => {
+      //     alert(':x: 打刻失敗')
+      //     console.error(err)
+      //   })
     },
-
     // 打刻済みデータを取得（APIから）
     fetchMarkedDates() {
       const yearMonth = `${this.year}-${String(this.month + 1).padStart(2, '0')}`
@@ -146,7 +155,7 @@ export default {
           this.markedDates = data.map(d => d.date)
         })
         .catch(err => {
-          console.error('🔴 打刻データ取得エラー', err)
+          console.error(':赤い丸: 打刻データ取得エラー', err)
         })
     }
   },
@@ -155,7 +164,6 @@ export default {
   }
 }
 </script>
-
 <style scoped>
 .calendar-container {
   font-family: sans-serif;
@@ -163,46 +171,39 @@ export default {
   margin: auto;
   text-align: center;
 }
-
 .logout-link {
   text-align: right;
   font-size: 14px;
-  color: #4a97c8;
+  color: #4A97C8;
 }
-
 .month-control button {
   margin: 4px;
   padding: 4px 10px;
   font-size: 14px;
 }
-
 .calendar {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
 }
-
 .calendar th {
-  background-color: #004b6b;
+  background-color: #004B6B;
   color: white;
   padding: 5px;
 }
-
 .calendar td {
   padding: 8px;
   border: 1px solid #ccc;
   background-color: #eee;
   cursor: pointer;
 }
-
 .calendar td.outside {
   background-color: #ddd;
   color: #aaa;
   cursor: default;
 }
-
 .calendar td.marked {
-  background-color: #9be7a0; /* 打刻済みの日付の背景色 */
+  background-color: #9BE7A0; /* 打刻済みの日付の背景色 */
   font-weight: bold;
 }
 </style>
