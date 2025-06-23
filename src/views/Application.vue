@@ -11,10 +11,29 @@
 
     <!-- 申請ボタン -->
     <div class="button-grid">
-      <button class="app-btn" @click="confirmApply('遅刻')">遅刻申請</button>
-      <button class="app-btn" @click="confirmApply('早退')">早退申請</button>
-      <button class="app-btn" @click="confirmApply('欠勤')">欠勤申請</button>
-      <button class="app-btn" @click="confirmApply('有給')">有給申請</button>
+      <button
+        class="app-btn"
+        @click="confirmApply('late')"
+        :disabled="request.late === 1"
+      >遅刻申請</button>
+
+      <button
+        class="app-btn"
+        @click="confirmApply('early')"
+        :disabled="request.early === 1"
+      >早退申請</button>
+
+      <button
+        class="app-btn"
+        @click="confirmApply('absence')"
+        :disabled="request.absence === 1"
+      >欠勤申請</button>
+
+      <button
+        class="app-btn"
+        @click="confirmApply('paid')"
+        :disabled="request.paid === 1"
+      >有給申請</button>
     </div>
 
     <!-- ダイアログ -->
@@ -31,41 +50,93 @@
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   name: 'Application',
+  props: ['requestId'],
   data() {
     const today = new Date()
     return {
+      Requestid:this.$route.params.requestId,
       today: today.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }),
       showDialog: false,
-      currentType: ''
+      currentType: '',
+      request:{},
     }
   },
+  computed: {
+    currentTypeJapanese() {
+      return {
+        late: '遅刻',
+        early: '早退',
+        absence: '欠勤',
+        paid: '有給'
+      }[this.currentType] || '';
+    }
+  },
+  created() {
+    this.fetchRequest();
+  },
   methods: {
+    fetchRequest() {
+      axios.get(`http://localhost:8080/user/request/${this.Requestid}`)
+        .then(res => {
+          this.request = res.data;
+        })
+        .catch(err => {
+          console.error('Request取得エラー', err);
+        });
+    },
     confirmApply(type) {
       this.currentType = type
       this.showDialog = true
     },
     submitApplication() {
-      fetch('http://localhost:8080/api/application', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 1,
-          type: this.currentType,
-          date: new Date().toISOString().split('T')[0]
-        })
-      })
-        .then(res => res.json())
+      const updatedRequest = {
+        ...this.request,//requestのコピーを作成
+        late: 0,
+        early: 0,
+        absence: 0,
+        paid: 0,
+        late_app: 0,
+        early_app: 0,
+        absence_app: 0,
+        paid_app: 0,
+      };
+
+      // 押されたボタンの種類のみ 1 をセット
+      updatedRequest[this.currentType] = 1;
+
+       axios.put(`http://localhost:8080/user/request/${this.Requestid}`, updatedRequest)
         .then(() => {
-          alert(`${this.currentType}申請を送信しました。`)
-          this.showDialog = false
+          alert(`${this.currentTypeJapanese}申請を送信しました。`);
+          this.showDialog = false;
+          this.fetchRequest();
         })
         .catch(err => {
-          alert('申請に失敗しました')
-          console.error(err)
-          this.showDialog = false
-        })
+          alert('申請に失敗しました');
+          console.error(err);
+          this.showDialog = false;
+        });
+      // fetch('http://localhost:8080/api/application', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     userId: 1,
+      //     type: this.currentType,
+      //     date: new Date().toISOString().split('T')[0]
+      //   })
+      // })
+      //   .then(res => res.json())
+      //   .then(() => {
+      //     alert(`${this.currentType}申請を送信しました。`)
+      //     this.showDialog = false
+      //   })
+      //   .catch(err => {
+      //     alert('申請に失敗しました')
+      //     console.error(err)
+      //     this.showDialog = false
+      //   })
     }
   }
 }

@@ -36,7 +36,9 @@
         </p>
     </div>
 
-    <router-link to="/application" class="link-button">各種申請へ＞＞</router-link>
+    <router-link v-if="request.id" 
+    :to="{ name: 'Application', params: { requestId: request.id } }" class="link-button"
+    >各種申請へ＞＞</router-link>
   </div>
 </template>
 
@@ -134,11 +136,11 @@ export default {
     },
     // 出勤・退勤データを取得
     fetchatt() {
-      console.log(this.punchDate);
-console.log(this.punchDate);
-console.log(this.punchDate);
-console.log(this.punchDate);
-console.log(this.punchDate);
+//       console.log(this.punchDate);
+// console.log(this.punchDate);
+// console.log(this.punchDate);
+// console.log(this.punchDate);
+// console.log(this.punchDate);
 
       axios.post(`http://localhost:8080/user/attendance/${this.userid}`, { punchDate: this.punchDate })
         .then(res => {
@@ -164,6 +166,7 @@ console.log(this.attendance);
         .then(res => {
           this.request = res.data;
           console.log("Request:", this.request);
+          console.log("requestId",this.request.id);
         });
     }
   }
