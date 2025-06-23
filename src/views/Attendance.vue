@@ -1,19 +1,229 @@
 <template>
-  <div class="attendance">
-    <h2>勤怠画面</h2>
-    <p>打刻・出勤・退勤などの機能が入ります。</p>
+  <div class="attendance-page">
+    <!-- 戻る＆ログアウト -->
+    <div class="header">
+      <router-link class="back-link" to="/main">&lt;&lt; 戻る</router-link>
+      <router-link class="logout" to="/logout">ログアウト</router-link>
+    </div>
+
+    <!-- タイトルと日付 -->
+    <h2 class="title">勤怠画面</h2>
+    <p class="date">{{ today }}</p>
+
+    <!-- 出勤・退勤ボタンと時間 -->
+    <div class="time-block">
+      <button class="btn" @click="clockIn" :disabled="inflag">出勤</button>
+      <span class="time" >{{ startTime || '--:--' }}</span>
+    </div>
+    <div class="time-block">
+      <button class="btn" @click="clockOut" :disabled="outflag">退勤</button>
+      <span class="time">{{ endTime || '未打刻' }}</span>
+    </div>
+
+    <!-- 申請状態表示 -->
+    <div class="status-block">
+      <p>
+        <div v-if="request.late !== 0">遅刻申請  <span>{{ status[request.late_app] }}</span></div>
+        </p>
+        <p>
+        <div v-if="request.early !== 0">早退申請  <span>{{ status[request.early_app] }}</span></div>
+        </p>
+        <p>
+        <div v-if="request.absence !== 0">欠勤申請  <span>{{ status[request.absence_app] }}</span></div>
+        </p>
+        <p>
+        <div v-if="request.paid !== 0">有給申請  <span>{{ status[request.paid_app] }}</span></div>
+        </p>
+    </div>
+
+    <router-link to="/application" class="link-button">各種申請へ＞＞</router-link>
   </div>
 </template>
 
 <script>
+import axios from 'axios'
 export default {
-  name: 'Attendance'
+  name: 'Attendance',
+  data() {
+    //クリックされた年・月・日、またはその日付を取得
+    //(paramsの中にクリックした日付のデータが入ってるので取り出す)
+    const dateParam = this.$route.params.date
+    let year, month, day
+    //paramの日付を取得できていれば-で区切って代入
+    if (dateParam) {
+    [year, month, day] = dateParam.split('-')
+    year = parseInt(year)
+    month = parseInt(month)
+    day = parseInt(day)
+  } else {
+    // なければ今日の日付を使用
+    const now = new Date()
+    year = now.getFullYear()
+    month = now.getMonth() + 1
+    day = now.getDate()
+  }
+    // console.log(year);
+    // console.log(month);
+    // console.log(day);
+
+
+    //DB用に型変換（月・日で一桁のものは０を加える　6月の場合06）
+    const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const displayDate = `${year}年${month}月${day}日`
+    return {
+      userid: 1,
+      attendance: {},
+      request: {},
+      today: displayDate,        // 画面表示用
+      punchDate: formattedDate,  // DB保存用 (yyyy-MM-dd)
+      startTime: '',
+      endTime: '',
+      status:["申請中","承認済み","拒否"],
+      inflag:false,
+      outflag:false
+    }
+  },
+  created(){
+    this.fetchatt();
+    this.fetchreq();
+  },
+  methods: {
+     // 出勤ボタンのクリックイベント
+    clockIn() {
+    //   console.log("出勤時刻ositauo");
+      // "HH:mm" の形式で送信（Java側に合わせる）
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2,'0');
+      const currentTime = `${hours}:${minutes}:${seconds}`;
+      console.log("出勤時刻:", currentTime);
+    //   // 出勤時刻を送信
+      axios.post(`http://localhost:8080/user/attendance/clockin/${this.userid}`, { time: currentTime,date: this.punchDate })
+        .then(res => {
+          this.attendance = res.data;
+           this.inflag = true;
+          
+          this.startTime = currentTime;
+          console.log("出勤データ:", this.attendance);
+        })
+        .catch(error => {
+          console.error("出勤エラー:", error);
+        });
+    },
+    // // 退勤ボタンのクリックイベント
+    clockOut() {
+    //   console.log("退勤時刻ositauo");
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2,'0');
+    const currentTime = `${hours}:${minutes}:${seconds}`;
+      console.log("退勤時刻:", currentTime);
+      // 退勤時刻を送信
+      axios.post(`http://localhost:8080/user/attendance/clockout/${this.userid}`, { time: currentTime ,date: this.punchDate })
+        .then(res => {
+           this.outflag = true;
+          this.attendance = res.data;
+          this.endTime = currentTime;
+          console.log("退勤データ:", this.attendance);
+        })
+        .catch(error => {
+          console.error("退勤エラー:", error);
+        });
+    },
+    // 出勤・退勤データを取得
+    fetchatt() {
+      console.log(this.punchDate);
+console.log(this.punchDate);
+console.log(this.punchDate);
+console.log(this.punchDate);
+console.log(this.punchDate);
+
+      axios.post(`http://localhost:8080/user/attendance/${this.userid}`, { punchDate: this.punchDate })
+        .then(res => {
+          this.attendance = res.data;
+          
+console.log(res);
+console.log(this.attendance);
+
+          this.startTime = this.attendance.start_time;
+          this.endTime = this.attendance.end_time;
+           if(this.startTime!==null){
+            this.inflag=true;
+          }
+          if(this.endTime!==null){
+            this.outflag=true;
+          }
+          console.log("Attendance:", this.attendance);
+        });
+    },
+
+    fetchreq() {
+      axios.get(`http://localhost:8080/user/request/${this.userid}`)
+        .then(res => {
+          this.request = res.data;
+          console.log("Request:", this.request);
+        });
+    }
+  }
 }
 </script>
 
 <style scoped>
-.attendance {
-  padding: 20px;
+.attendance-page {
   font-family: sans-serif;
+  max-width: 320px;
+  margin: auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.title {
+  margin: 10px 0;
+  font-size: 20px;
+}
+
+.date {
+  margin-bottom: 20px;
+}
+
+.time-block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.btn {
+  border: 2px solid black;
+  background: white;
+  padding: 5px 15px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.time {
+  font-size: 16px;
+}
+
+.status-block {
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.link-button {
+  font-size: 14px;
+  color: #007acc;
+  text-decoration: underline;
 }
 </style>
