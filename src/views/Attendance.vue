@@ -22,8 +22,18 @@
 
     <!-- 申請状態表示 -->
     <div class="status-block">
-      <div>遅刻申請　申請中</div>
-      <div>有給申請　承認済み</div>
+      <p>
+        <div v-if="request.late !== 0">遅刻申請  <span>{{ status[request.late_app] }}</span></div>
+        </p>
+        <p>
+        <div v-if="request.early !== 0">早退申請  <span>{{ status[request.early_app] }}</span></div>
+        </p>
+        <p>
+        <div v-if="request.absence !== 0">欠勤申請  <span>{{ status[request.absence_app] }}</span></div>
+        </p>
+        <p>
+        <div v-if="request.paid !== 0">有給申請  <span>{{ status[request.paid_app] }}</span></div>
+        </p>
     </div>
 
     <router-link to="/application" class="link-button">各種申請へ＞＞</router-link>
@@ -37,7 +47,7 @@ export default {
   name: 'Attendance',
   
   data(){
-    
+
     return{
       userid: 1,
       attendance: {},
@@ -46,7 +56,8 @@ export default {
       startTime: '',
       endTime: '',
       inflag:false,
-
+      status:["申請中","承認済み","拒否"],
+outflag:false,
     }
   },
   created(){
@@ -63,7 +74,7 @@ export default {
       axios.post(`http://localhost:8080/user/attendance/clockin/${this.userid}`, { time: currentTime,date: this.date })
         .then(res => {
           this.attendance = res.data;
-          
+          this.inflag = true;
           this.startTime = currentTime;
           console.log("出勤データ:", this.attendance);
         })
@@ -83,6 +94,7 @@ export default {
         .then(res => {
           this.attendance = res.data;
           this.endTime = currentTime;
+          this.outflag = true;
           console.log("退勤データ:", this.attendance);
         })
         .catch(error => {
@@ -95,9 +107,14 @@ export default {
       axios.post(`http://localhost:8080/user/attendance/1`, { date: this.date })
         .then(res => {
           this.attendance = res.data;
-
           this.startTime = this.attendance.start_time;
           this.endTime = this.attendance.end_time;
+          if(this.startTime!==null){
+            this.inflag=true;
+          }
+          if(this.endTime!==null){
+            this.outflag=true;
+          }
           console.log("Attendance:", this.attendance);
         });
     },
@@ -112,10 +129,60 @@ export default {
   }
 }
 </script>
-
 <style scoped>
-.attendance {
-  padding: 20px;
+.attendance-page {
   font-family: sans-serif;
+  max-width: 320px;
+  margin: auto;
+  padding: 20px;
+  text-align: center;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.title {
+  margin: 10px 0;
+  font-size: 20px;
+}
+
+.date {
+  margin-bottom: 20px;
+}
+
+.time-block {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.btn {
+  border: 2px solid black;
+  background: white;
+  padding: 5px 15px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.time {
+  font-size: 16px;
+}
+
+.status-block {
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.link-button {
+  font-size: 14px;
+  color: #007acc;
+  text-decoration: underline;
 }
 </style>
