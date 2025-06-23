@@ -1,14 +1,8 @@
 <template>
   <div class="admin-home">
-
+    <!-- 歓迎語 -->
     <h2>{{ username }} さん、ようこそ</h2>
     <h3>勤怠管理</h3>
-
-    <!-- ログアウトリンク -->
-    <router-link to="/logout" class="logout-link">ログアウト</router-link>
-
-
-
     <!-- カレンダーコンポーネント -->
     <Calendar @select-date="goToAttendance" />
 

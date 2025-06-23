@@ -1,10 +1,7 @@
 <template>
   <div class="calendar-container">
     <div class="header">
-      <!-- ログアウトリンク -->
-      <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
-      <h2>ようこそ {{ username }} さん</h2>
-      <h3>勤怠管理</h3>
+     
       <!-- 現在の年月表示 -->
       <h4>{{ year }}年 {{ month + 1 }}月</h4>
       <!-- 月切り替えボタン -->

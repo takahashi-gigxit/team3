@@ -12,6 +12,8 @@ import Attendance from '../views/Attendance.vue'
 import Application from '../views/Application.vue'
 import ProfileUpdateDone from '../views/ProfileUpdateDone.vue'
 
+
+
 // 管理者用
 import AdminHome from '../views/AdminHome.vue'
 import Approval from '../views/Approval.vue'
@@ -36,8 +38,8 @@ const routes = [
   { path: '/attendance', name: 'Attendance', component: Attendance },
   { path: '/application', name: 'Application', component: Application },
   { path: '/profile/update/done', name: 'ProfileUpdateDone', component: ProfileUpdateDone },
-  { path: '/attendance/:month/:day', name: 'AttendanceWithDate', component: Attendance },
-
+  { path: '/attendance/:year/:month/:day', name: 'AttendanceWithDate', component: Attendance },
+  
   // 管理者画面
   { path: '/admin', name: 'AdminHome', component: AdminHome },
   { path: '/admin/approval', name: 'Approval', component: Approval },

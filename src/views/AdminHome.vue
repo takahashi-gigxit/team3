@@ -1,8 +1,7 @@
 <template>
   <div class="admin-home">
-    <!-- ログアウトリンク -->
-    <router-link to="/logout" class="logout-link">ログアウト</router-link>
-
+   
+     <!-- 歓迎語 -->
     <h2>ようこそ（総務）さん</h2>
     <h3>勤怠管理</h3>
 
