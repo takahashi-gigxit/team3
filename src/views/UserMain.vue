@@ -10,9 +10,9 @@
 
    <Calendar @select-date="goToAttendance" />
   </div>
-  <div>
+  <!-- <div>
 <router-link to="/attapproval" class="link-button">各種申請へ＞＞</router-link>
-  </div>
+  </div> -->
 </template>
 
 <script>

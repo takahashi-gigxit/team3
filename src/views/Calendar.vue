@@ -2,7 +2,6 @@
   <div class="calendar-container">
     <div class="header">
       <!-- ログアウトリンク -->
-      <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
       <h2>ようこそ {{ username }} さん</h2>
       <h3>勤怠管理</h3>
 
@@ -26,16 +25,30 @@
       <tbody>
         <tr v-for="(week, index) in calendar" :key="index">
           <td
-            v-for="date in week"
-            :key="date.date"
-            :class="[{ outside: date.outside }, { marked: date.marked }]"
-            @click="handleDateClick(date)"
-          >
-            {{ date.day }}
-          </td>
+  v-for="date in week"
+  :key="date.date"
+  :class="[
+    { outside: date.outside },
+    { startMarked: date.marked.start },
+    { endMarked: date.marked.end }
+  ]"
+  @click="handleDateClick(date)"
+>
+  {{ date.day }}
+</td>
         </tr>
       </tbody>
     </table>
+    <!-- 注釈（凡例） -->
+<div class="legend">
+  <div><span class="box start"></span> 出勤のみ</div>
+  <div><span class="box end"></span> 退勤のみ</div>
+  <div><span class="box both"></span> 出退勤済み</div>
+</div>
+<div class="total-time" style="margin-top: 20px;">
+  {{ month + 1 }}月の合計勤務時間: <strong>{{ totalWorkHours }}</strong>
+</div>
+
   </div>
 </template>
 
@@ -80,7 +93,7 @@ export default {
           result[row].push({
             day: day,
             outside: false,
-            marked: this.markedDates.includes(dateStr),
+            marked: this.getMarkedState(dateStr),
             date: dateStr
           })
           day++
@@ -89,6 +102,7 @@ export default {
           result[row].push({ day: d, outside: true, marked: false, date: `${this.year}-${this.month + 2}-${d}` })
         }
       }
+
       return result
     }
   },
@@ -159,16 +173,51 @@ console.log( "date.date")
 
     // 打刻済みデータを取得（APIから）
     fetchMarkedDates() {
-      const yearMonth = `${this.year}-${String(this.month + 1).padStart(2, '0')}`
-      fetch(`http://localhost:8080/api/attendance?userId=1&month=${yearMonth}`)
-        .then(res => res.json())
-        .then(data => {
-          this.markedDates = data.map(d => d.date)
-        })
-        .catch(err => {
-          console.error('🔴 打刻データ取得エラー', err)
-        })
+  const yearMonth = `${this.year}-${String(this.month + 1).padStart(2, '0')}`
+  fetch(`http://localhost:8080/user/attendance/month/1?month=${yearMonth}`)
+    .then(res => res.json())
+    .then(data => {
+      this.markedDates = data.map(d => ({
+        date: d.date,
+        start: d.start,
+        end: d.end,
+        start_time: d.start_time, // ← APIから取得できること前提
+        end_time: d.end_time
+      }))
+      this.calculateTotalHours()
+    })
+    .catch(err => {
+      console.error('🔴 打刻データ取得エラー', err)
+    })
+},
+    getMarkedState(dateStr) {
+  const record = this.markedDates.find(d => d.date === dateStr)
+    console.log(record);
+  return record ? { start: record.start, end: record.end } : { start: false, end: false }
+
+},
+calculateTotalHours() {
+  let totalMinutes = 0;
+
+  this.markedDates.forEach(entry => {
+    // 出勤・退勤の両方が済んでいて、時刻が存在することを確認
+    if (entry.start && entry.end && entry.start_time && entry.end_time) {
+      const [sh, sm] = entry.start_time.split(':').map(Number)
+      const [eh, em] = entry.end_time.split(':').map(Number)
+
+      const start = sh * 60 + sm
+      const end = eh * 60 + em
+
+      if (end > start) {
+        totalMinutes += end - start
+      }
     }
+  });
+
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  this.totalWorkHours = `${hours}時間 ${minutes}分`
+},
   },
   mounted() {
     this.fetchMarkedDates()
@@ -224,5 +273,53 @@ console.log( "date.date")
 .calendar td.marked {
   background-color: #9be7a0; /* 打刻済みの日付の背景色 */
   font-weight: bold;
+}
+.calendar td.startMarked {
+  background-color: #ffe082; /* 出勤済み → 薄いオレンジ */
+}
+
+.calendar td.endMarked {
+  background-color: #80d8ff; /* 退勤済み → 薄い水色 */
+}
+
+.calendar td.startMarked.endMarked {
+  background-color: #a5d6a7; /* 出退勤両方 → 緑色 */
+}
+.legend {
+  margin-top: 20px;
+  font-size: 14px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.box {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  border: 1px solid #999;
+  vertical-align: middle;
+}
+
+.box.start {
+  background-color: #ffe082; /* 出勤のみ：黄色 */
+}
+
+.box.end {
+  background-color: #80d8ff; /* 退勤のみ：水色 */
+}
+
+.box.both {
+  background-color: #a5d6a7; /* 出退勤両方：緑 */
+}
+.calendar td:nth-child(1):not(.outside):not(.startMarked):not(.endMarked) {
+  background-color: #ffe0e0; /* 日曜：薄ピンク */
+}
+
+.calendar td:nth-child(7):not(.outside):not(.startMarked):not(.endMarked) {
+  background-color: #e0f7fa; /* 土曜：薄水色 */
 }
 </style>
