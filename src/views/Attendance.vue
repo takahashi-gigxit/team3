@@ -11,9 +11,9 @@
       <h2 class="title">勤怠画面</h2>
 
       <div class="date-nav">
-        <button @click="goPrevDate">＜＜</button>
+        <button @click="goPrevDate">＜</button>
         <p class="date">{{ today }}</p>
-        <button @click="goNextDate">＞＞</button>
+        <button @click="goNextDate">＞</button>
       </div>
     </div>
 
@@ -335,4 +335,19 @@ console.log(this.attendance);
   text-align: center;
 }
 
+.date-nav button {
+  border: 1.5px solid #333;
+  background-color: #f9f9f9;
+  color: #333;
+  font-weight: bold;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.date-nav button:hover {
+  background-color: #333;
+  color: #fff;
+}
 </style>
