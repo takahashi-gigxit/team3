@@ -29,8 +29,10 @@ const routes = [
   //  一般ユーザー画面
   { path: '/main', name: 'UserMain', component: UserMain },
   { path: '/attendance', name: 'Attendance', component: Attendance },
-  { path: '/application', name: 'Application', component: Application },
+  { path: '/application/:requestId', name: 'Application', component: Application },
   { path: '/profile/update/done', name: 'ProfileUpdateDone', component: ProfileUpdateDone },
+   { path: '/attendance/:date', name: 'AttendanceWithDate', component: Attendance },
+
 
   // 管理者画面
   { path: '/admin', name: 'AdminHome', component: AdminHome },

@@ -8,11 +8,11 @@
 
     <!-- タイトルと日付 -->
     <h2 class="title">勤怠画面</h2>
-    <p class="date">{{ date }}</p>
+    <p class="date">{{ today }}</p>
 
     <!-- 出勤・退勤ボタンと時間 -->
     <div class="time-block">
-      <button class="btn" @click="clockIn":disabled="inflag">出勤</button>
+      <button class="btn" @click="clockIn" :disabled="inflag">出勤</button>
       <span class="time" >{{ startTime || '--:--' }}</span>
     </div>
     <div class="time-block">
@@ -35,46 +35,80 @@
         <div v-if="request.paid !== 0">有給申請  <span>{{ status[request.paid_app] }}</span></div>
         </p>
     </div>
-
-    <router-link to="/application" class="link-button">各種申請へ＞＞</router-link>
-  </div>
+    <router-link
+  v-if="request && request.id"
+  class="link-button"
+  :to="`/application/${request.id}`"
+>
+  各種申請へ＞＞
+</router-link>
+    </div>
 </template>
 
 <script>
-import axios from 'axios';
-
+import axios from 'axios'
 export default {
   name: 'Attendance',
-  
-  data(){
+  data() {
+    //クリックされた年・月・日、またはその日付を取得
+    //(paramsの中にクリックした日付のデータが入ってるので取り出す)
+    const dateParam = this.$route.params.date
+    let year, month, day
+    //paramの日付を取得できていれば-で区切って代入
+    if (dateParam) {
+    [year, month, day] = dateParam.split('-')
+    year = parseInt(year)
+    month = parseInt(month)
+    day = parseInt(day)
+  } else {
+    // なければ今日の日付を使用
+    const now = new Date()
+    year = now.getFullYear()
+    month = now.getMonth() + 1
+    day = now.getDate()
+  }
+    // console.log(year);
+    // console.log(month);
+    // console.log(day);
 
-    return{
+
+    //DB用に型変換（月・日で一桁のものは０を加える　6月の場合06）
+    const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const displayDate = `${year}年${month}月${day}日`
+    return {
       userid: 1,
       attendance: {},
       request: {},
-      date: "2025-06-20",
+      today: displayDate,        // 画面表示用
+      punchDate: formattedDate,  // DB保存用 (yyyy-MM-dd)
       startTime: '',
       endTime: '',
-      inflag:false,
       status:["申請中","承認済み","拒否"],
-outflag:false,
+      inflag:false,
+      outflag:false
     }
   },
   created(){
-    this.fetchatt();
-    this.fetchreq();
+    this.fetchpre();
+   
   },
   methods: {
-    // 出勤ボタンのクリックイベント
+     // 出勤ボタンのクリックイベント
     clockIn() {
-      console.log("出勤時刻ositauo");
-      const currentTime = new Date().toLocaleTimeString(); // 現在のローカル時刻を取得
+    //   console.log("出勤時刻ositauo");
+      // "HH:mm" の形式で送信（Java側に合わせる）
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2,'0');
+      const currentTime = `${hours}:${minutes}:${seconds}`;
       console.log("出勤時刻:", currentTime);
-      // 出勤時刻を送信
-      axios.post(`http://localhost:8080/user/attendance/clockin/${this.userid}`, { time: currentTime,date: this.date })
+    //   // 出勤時刻を送信
+      axios.post(`http://localhost:8080/user/attendance/clockin/${this.userid}`, { time: currentTime,date: this.punchDate })
         .then(res => {
           this.attendance = res.data;
-          this.inflag = true;
+           this.inflag = true;
+          
           this.startTime = currentTime;
           console.log("出勤データ:", this.attendance);
         })
@@ -82,53 +116,68 @@ outflag:false,
           console.error("出勤エラー:", error);
         });
     },
-
-    // 退勤ボタンのクリックイベント
+    // // 退勤ボタンのクリックイベント
     clockOut() {
-      console.log("退勤時刻ositauo");
-      const currentTime = new Date().toLocaleTimeString(); // 現在のローカル時刻を取得
-
+    //   console.log("退勤時刻ositauo");
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2,'0');
+    const currentTime = `${hours}:${minutes}:${seconds}`;
       console.log("退勤時刻:", currentTime);
       // 退勤時刻を送信
-      axios.post(`http://localhost:8080/user/attendance/clockout/${this.userid}`, { time: currentTime ,date: this.date})
+      axios.post(`http://localhost:8080/user/attendance/clockout/${this.userid}`, { time: currentTime ,date: this.punchDate })
         .then(res => {
+           this.outflag = true;
           this.attendance = res.data;
           this.endTime = currentTime;
-          this.outflag = true;
           console.log("退勤データ:", this.attendance);
         })
         .catch(error => {
           console.error("退勤エラー:", error);
         });
     },
-
     // 出勤・退勤データを取得
     fetchatt() {
-      axios.post(`http://localhost:8080/user/attendance/1`, { date: this.date })
-        .then(res => {
-          this.attendance = res.data;
-          this.startTime = this.attendance.start_time;
-          this.endTime = this.attendance.end_time;
-          if(this.startTime!==null){
-            this.inflag=true;
-          }
-          if(this.endTime!==null){
-            this.outflag=true;
-          }
-          console.log("Attendance:", this.attendance);
-        });
-    },
+  axios.post(`http://localhost:8080/user/attendance/${this.userid}`, { punchDate: this.punchDate })
+    .then(res => {
+      this.attendance = res.data;
+      this.startTime = this.attendance.start_time;
+      this.endTime = this.attendance.end_time;
+      if(this.startTime !== null){
+        this.inflag = true;
+      }
+      if(this.endTime !== null){
+        this.outflag = true;
+      }
+
+      // ✅ attendanceの取得完了後にrequestを取得
+      if (this.attendance.requestid) {
+        this.fetchreq();
+      }
+    });
+  },
 
     fetchreq() {
-      axios.get(`http://localhost:8080/user/request/1`)
+      console.log(this.attendance.requestid);
+      axios.get(`http://localhost:8080/user/request/${this.attendance.requestid}`)
         .then(res => {
           this.request = res.data;
           console.log("Request:", this.request);
         });
-    }
+    },
+   
+  fetchpre() {
+  axios.post(`http://localhost:8080/user/check/${this.userid}`, { punchDate: this.punchDate })
+    .then(() => {
+      this.fetchatt();
+    });
+}
   }
+
 }
 </script>
+
 <style scoped>
 .attendance-page {
   font-family: sans-serif;

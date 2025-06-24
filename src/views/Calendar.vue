@@ -49,7 +49,12 @@ export default {
       year: today.getFullYear(),
       month: today.getMonth(), // 0 = 1月
       username: localStorage.getItem('username') || 'ゲスト',
-      markedDates: [] // 打刻済みの日付
+      markedDates: [], // 打刻済みの日付
+
+      //クリックされた日付、月を保存してリンクに出す用の変数
+      selectedYearForRoute: null,
+      selectedMonthForRoute: null,
+      selectedDayForRoute: null
     }
   },
   computed: {
@@ -116,25 +121,40 @@ export default {
         alert('この日は既に打刻済みです')
         return
       }
-
-      fetch('http://localhost:8080/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: 1,
-          date: date.date,
-          type: '打刻'
-        })
+console.log( date.date)
+console.log( "date.date")
+      // 日付を分割して月・日をセット
+      const [yearStr, monthStr, dayStr] = date.date.split('-')
+      //↑　クリックされた日付をのYYYY-MM-DDで取得しそれを「-」ごとに分けて配列に挿入
+      this.selectedMonthForRoute = parseInt(monthStr, 10)
+      //　
+      this.selectedDayForRoute = parseInt(dayStr, 10)
+      this.selectedYearForRoute = parseInt(yearStr,10)
+         this.$router.push({
+        name: 'AttendanceWithDate',
+         params: {
+          date: date.date // "YYYY-MM-DD" 形式のまま渡す
+        }
       })
-        .then(res => res.json())
-        .then(() => {
-          alert(`✅ 打刻成功: ${date.date}`)
-          this.markedDates.push(date.date)
-        })
-        .catch(err => {
-          alert('❌ 打刻失敗')
-          console.error(err)
-        })
+
+      // fetch('http://localhost:8080/api/attendance', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     userId: 1,
+      //     date: date.date,
+      //     type: '打刻'
+      //   })
+      // })
+      //   .then(res => res.json())
+      //   .then(() => {
+      //     alert(`✅ 打刻成功: ${date.date}`)
+      //     this.markedDates.push(date.date)
+      //   })
+      //   .catch(err => {
+      //     alert('❌ 打刻失敗')
+      //     console.error(err)
+      //   })
     },
 
     // 打刻済みデータを取得（APIから）
