@@ -8,33 +8,43 @@
 
     <form @submit.prevent="handleRegister">
       <input v-model="username" type="text" placeholder="名前" class="input-box" />
+      <input v-model="email" type="email" placeholder="メールアドレス" class="input-box" />
       <input v-model="password" type="password" placeholder="パスワード" class="input-box" />
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-      <button type="submit" class="login-button">ログイン</button>
+      <button type="submit" class="login-button">登録</button>
     </form>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      username: '',
-      password: '',
-      errorMessage: ''
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
+
+const username = ref('')
+const email = ref('')
+const password = ref('')
+const errorMessage = ref('')
+
+const router = useRouter()
+
+const handleRegister = () => {
+  if (username.value && email.value && password.value) {
+    // 一時的に入力情報をローカルストレージに保存
+    const userDraft = {
+      username: username.value,
+      email: email.value,
+      password: password.value
     }
-  },
-  methods: {
-    handleRegister() {
-      if (this.username && this.password) {
-        alert('登録完了')
-        this.$router.push('/')
-      } else {
-        this.errorMessage = 'エラーメッセージです'
-      }
-    }
+    localStorage.setItem('userDraft', JSON.stringify(userDraft))
+
+    // 確認画面へ遷移
+    router.push('/register/confirm')
+  } else {
+    errorMessage.value = 'すべての項目を入力してください'
   }
 }
+
 </script>
 
 <style scoped>
@@ -44,6 +54,7 @@ export default {
   text-align: center;
   font-family: sans-serif;
 }
+
 .back-link {
   position: fixed;
   top: 100px;
@@ -81,5 +92,4 @@ export default {
   background-color: white;
   cursor: pointer;
 }
-
 </style>
