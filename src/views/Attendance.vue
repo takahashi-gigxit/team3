@@ -8,7 +8,11 @@
 
     <!-- タイトルと日付 -->
     <h2 class="title">勤怠画面</h2>
-    <p class="date">{{ today }}</p>
+     <div class="date-nav">
+        <button @click="goPrevDate">＜</button>
+        <p class="date">{{ today }}</p>
+        <button @click="goNextDate">＞</button>
+      </div>
 
     <!-- 出勤・退勤ボタンと時間 -->
     <div class="time-block">
@@ -92,6 +96,31 @@ export default {
     this.fetchpre();
    
   },
+   watch: {
+    // ルートパラメータの日付が変わったら画面更新
+    '$route.params.date'(newDate) {
+      if (newDate) {
+        const [year, month, day] = newDate.split('-').map(Number)
+        this.punchDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+        this.today = `${year}年${month}月${day}日`
+      } else {
+        // パラメータが無ければ今日に戻す
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth() + 1
+        const day = now.getDate()
+        this.punchDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+        this.today = `${year}年${month}月${day}日`
+      }
+      // 日付更新したら再取得
+      this.startTime = ''
+      this.endTime = ''
+      this.attendance = {}
+      this.request = {}
+      this.fetchatt()
+      this.checkAndFetch()
+    }
+  },
   methods: {
      // 出勤ボタンのクリックイベント
     clockIn() {
@@ -139,18 +168,20 @@ export default {
     },
     // 出勤・退勤データを取得
     fetchatt() {
+      this.inflag = false;
+  this.outflag = false;
+  console.log(this.punchDate)
   axios.post(`http://localhost:8080/user/attendance/${this.userid}`, { punchDate: this.punchDate })
     .then(res => {
       this.attendance = res.data;
       this.startTime = this.attendance.start_time;
       this.endTime = this.attendance.end_time;
-      if(this.startTime !== null){
-        this.inflag = true;
-      }
-      if(this.endTime !== null){
-        this.outflag = true;
-      }
-
+      if (this.attendance.start_time && this.attendance.start_time !== "") {
+  this.inflag = true;
+}
+if (this.attendance.end_time && this.attendance.end_time !== "") {
+  this.outflag = true;
+}
       // ✅ attendanceの取得完了後にrequestを取得
       if (this.attendance.requestid) {
         this.fetchreq();
@@ -166,13 +197,43 @@ export default {
           console.log("Request:", this.request);
         });
     },
+    goPrevDate() {
+      const current = new Date(this.punchDate);
+      current.setDate(current.getDate() - 1);
+      this.navigateToDate(current);
+    },
+
+  // 次日へ遷移
+    goNextDate() {
+      const current = new Date(this.punchDate);
+      current.setDate(current.getDate() + 1);
+      this.navigateToDate(current);
+    },
+     // 日付を文字列化しルーター遷移
+  navigateToDate(dateObj) {
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    this.$router.push({ name: 'AttendanceWithDate', params: { date: dateStr } });
+  },
+    async checkAndFetch() {
+      try {
+        console.log(this.userid);
+        await axios.post(`http://localhost:8080/user/check/${this.userid}`, { punchDate: this.punchDate });
+        this.fetchatt(); // checkで必要ならrequest作成 → その後取得
+      } catch (e) {
+        console.error("check失敗", e);
+      }
+    },
    
   fetchpre() {
   axios.post(`http://localhost:8080/user/check/${this.userid}`, { punchDate: this.punchDate })
     .then(() => {
       this.fetchatt();
     });
-}
+},
+
   }
 
 }
