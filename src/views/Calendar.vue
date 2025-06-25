@@ -191,6 +191,7 @@ console.log( "date.date")
   fetch(`http://localhost:8080/user/attendance/month/${user_id}?month=${yearMonth}`)
     .then(res => res.json())
     .then(data => {
+      console.log('✅ 取得した勤怠データ:', data)  
       this.markedDates = data.map(d => ({
         date: d.date,
         start: d.start,
@@ -206,7 +207,7 @@ console.log( "date.date")
 },
     getMarkedState(dateStr) {
   const record = this.markedDates.find(d => d.date === dateStr)
-    console.log(record);
+    console.log(`▶️ ${dateStr}`, record);
   return record ? { start: record.start, end: record.end } : { start: false, end: false }
 
 },
