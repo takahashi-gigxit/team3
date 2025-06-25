@@ -15,6 +15,10 @@ import ProfileUpdateDone from '../views/ProfileUpdateDone.vue'
 // 管理者用
 import AdminHome from '../views/AdminHome.vue'
 import Approval from '../views/Approval.vue'
+
+
+// master用
+import MasterHome from '../views/MasterHome.vue'
 import UserList from '../views/UserList.vue'
 import UserEdit from '../views/UserEdit.vue'
 import ApplicationList from '../views/ApplicationList.vue'
@@ -29,15 +33,26 @@ const routes = [
   //  一般ユーザー画面
   { path: '/main', name: 'UserMain', component: UserMain },
   { path: '/attendance', name: 'Attendance', component: Attendance },
-  { path: '/application', name: 'Application', component: Application },
+  { path: '/application/:requestId', name: 'Application', component: Application },
   { path: '/profile/update/done', name: 'ProfileUpdateDone', component: ProfileUpdateDone },
+   { path: '/attendance/:date', name: 'AttendanceWithDate', component: Attendance },
 
-  // 管理者画面
+
+   // 管理者画面
   { path: '/admin', name: 'AdminHome', component: AdminHome },
   { path: '/admin/approval', name: 'Approval', component: Approval },
-  { path: '/admin/users', name: 'UserList', component: UserList },
-  { path: '/admin/users/edit', name: 'UserEdit', component: UserEdit },
-  { path: '/admin/applications', name: 'ApplicationList', component: ApplicationList },
+ 
+  // master用
+  {
+    path: '/master/home',
+    name: 'MasterHome',
+    component: MasterHome,
+    meta: { requiresAuth: true, role: 'master' }
+  },
+   { path: '/user/list', name: 'UserList', component: UserList },
+  { path: '/user/edit/:id', name: 'UserEdit', component: UserEdit },
+  { path: '/applicationlist', name: 'ApplicationList', component: ApplicationList },
+
 
   // デフォルトルート
   { path: '/', redirect: '/login' }
