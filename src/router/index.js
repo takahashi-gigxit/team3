@@ -11,6 +11,7 @@ import UserMain from '../views/UserMain.vue'
 import Attendance from '../views/Attendance.vue'
 import Application from '../views/Application.vue'
 import ProfileUpdateDone from '../views/ProfileUpdateDone.vue'
+import UserAppList from '../views/UserAppList.vue'
 
 // 管理者用
 import AdminHome from '../views/AdminHome.vue'
@@ -36,6 +37,7 @@ const routes = [
   { path: '/application/:requestId', name: 'Application', component: Application },
   { path: '/profile/update/done', name: 'ProfileUpdateDone', component: ProfileUpdateDone },
    { path: '/attendance/:date', name: 'AttendanceWithDate', component: Attendance },
+  {path:'/applist/user/:userId',name:'UserAppList',component: UserAppList},
 
 
    // 管理者画面

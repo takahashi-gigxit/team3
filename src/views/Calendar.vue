@@ -48,7 +48,10 @@
 <div class="total-time" style="margin-top: 20px;">
   {{ month + 1 }}月の合計勤務時間: <strong>{{ totalWorkHours }}</strong>
 </div>
-
+    <!-- 申請一覧リンク -->
+    <router-link :to="{ name: 'UserAppList', params: { userId: user_id } }" class="link-button">
+  申請一覧へ＞＞
+</router-link>
   </div>
 </template>
 
@@ -58,18 +61,27 @@ export default {
   name: 'Calendar',
   data() {
     const today = new Date()
+    let user = {};
+    const userStr = localStorage.getItem('user');
+
+    try {
+      user = userStr ? JSON.parse(userStr) : {};
+    } catch (err) {
+      console.error('ユーザー情報の読み取りに失敗しました', err);
+    }
+
     return {
-      days: ['日', '月', '火', '水', '木', '金', '土'], // 曜日表示
+      days: ['日', '月', '火', '水', '木', '金', '土'],
       year: today.getFullYear(),
-      month: today.getMonth(), // 0 = 1月
-      username: localStorage.getItem('username') || 'ゲスト',
-      markedDates: [], // 打刻済みの日付
+      month: today.getMonth(),
+      username: user.username || 'ゲスト',
+      user_id: user.id || null,  // ← ここで安全に user_id を設定
+      markedDates: [],
       totalWorkHours: 0,
-      //クリックされた日付、月を保存してリンクに出す用の変数
       selectedYearForRoute: null,
       selectedMonthForRoute: null,
-      selectedDayForRoute: null
-    }
+      selectedDayForRoute: null,
+    };
   },
   computed: {
     calendar() {
