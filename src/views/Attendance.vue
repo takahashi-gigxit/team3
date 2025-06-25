@@ -7,12 +7,15 @@
     </div>
 
     <!-- タイトルと日付 -->
-    <h2 class="title">勤怠画面</h2>
-     <div class="date-nav">
+    <div class="title-date-container">
+      <h2 class="title">勤怠画面</h2>
+
+      <div class="date-nav">
         <button @click="goPrevDate">＜</button>
         <p class="date">{{ today }}</p>
         <button @click="goNextDate">＞</button>
       </div>
+    </div>
 
     <!-- 出勤・退勤ボタンと時間 -->
     <div class="time-block">
@@ -39,14 +42,11 @@
         <div v-if="request.paid !== 0">有給申請  <span>{{ status[request.paid_app] }}</span></div>
         </p>
     </div>
-    <router-link
-  v-if="request && request.id"
-  class="link-button"
-  :to="`/application/${request.id}`"
->
-  各種申請へ＞＞
-</router-link>
-    </div>
+
+    <router-link v-if="request.id" 
+    :to="{ name: 'Application', params: { requestId: attendance.requestid } }" class="link-button"
+    >各種申請へ＞＞</router-link>
+  </div>
 </template>
 
 <script>
@@ -80,7 +80,7 @@ export default {
     const formattedDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const displayDate = `${year}年${month}月${day}日`
     return {
-      userid: null,
+      userid: 1,
       attendance: {},
       request: {},
       today: displayDate,        // 画面表示用
@@ -93,11 +93,11 @@ export default {
     }
   },
   created(){
-    
-    this.fetchpre();
-   
+    this.fetchatt();
+    this.fetchreq();
+    this.checkAndFetch();
   },
-   watch: {
+  watch: {
     // ルートパラメータの日付が変わったら画面更新
     '$route.params.date'(newDate) {
       if (newDate) {
@@ -114,11 +114,14 @@ export default {
         this.today = `${year}年${month}月${day}日`
       }
       // 日付更新したら再取得
+      this.inflag = false
+      this.outflag = false
       this.startTime = ''
       this.endTime = ''
       this.attendance = {}
       this.request = {}
       this.fetchatt()
+      this.fetchreq()
       this.checkAndFetch()
     }
   },
@@ -167,37 +170,6 @@ export default {
           console.error("退勤エラー:", error);
         });
     },
-    // 出勤・退勤データを取得
-    fetchatt() {
-      this.inflag = false;
-  this.outflag = false;
-  console.log(this.punchDate)
-  axios.post(`http://localhost:8080/user/attendance/${this.userid}`, { punchDate: this.punchDate })
-    .then(res => {
-      this.attendance = res.data;
-      this.startTime = this.attendance.start_time;
-      this.endTime = this.attendance.end_time;
-      if (this.attendance.start_time && this.attendance.start_time !== "") {
-  this.inflag = true;
-}
-if (this.attendance.end_time && this.attendance.end_time !== "") {
-  this.outflag = true;
-}
-      // ✅ attendanceの取得完了後にrequestを取得
-      if (this.attendance.requestid) {
-        this.fetchreq();
-      }
-    });
-  },
-
-    fetchreq() {
-      console.log(this.attendance.requestid);
-      axios.get(`http://localhost:8080/user/request/${this.attendance.requestid}`)
-        .then(res => {
-          this.request = res.data;
-          console.log("Request:", this.request);
-        });
-    },
     goPrevDate() {
       const current = new Date(this.punchDate);
       current.setDate(current.getDate() - 1);
@@ -210,7 +182,7 @@ if (this.attendance.end_time && this.attendance.end_time !== "") {
       current.setDate(current.getDate() + 1);
       this.navigateToDate(current);
     },
-     // 日付を文字列化しルーター遷移
+    // 日付を文字列化しルーター遷移
   navigateToDate(dateObj) {
     const yyyy = dateObj.getFullYear();
     const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -220,39 +192,64 @@ if (this.attendance.end_time && this.attendance.end_time !== "") {
   },
     async checkAndFetch() {
       try {
-        console.log(this.userid);
         await axios.post(`http://localhost:8080/user/check/${this.userid}`, { punchDate: this.punchDate });
         this.fetchatt(); // checkで必要ならrequest作成 → その後取得
       } catch (e) {
         console.error("check失敗", e);
       }
     },
-   
-  fetchpre() {
-const userStr = localStorage.getItem('user');
-  if (!userStr) {
-    console.error('ユーザー情報が見つかりません');
-    return;
+    // 出勤・退勤データを取得
+    fetchatt() {
+//       console.log(this.punchDate);
+// console.log(this.punchDate);
+// console.log(this.punchDate);
+// console.log(this.punchDate);
+// console.log(this.punchDate);
+
+      axios.post(`http://localhost:8080/user/attendance/${this.userid}`, { punchDate: this.punchDate })
+        .then(res => {
+          this.attendance = res.data;
+          
+console.log(res);
+console.log(this.attendance);
+
+          this.startTime = this.attendance.start_time;
+          this.endTime = this.attendance.end_time;
+          if (this.startTime) {
+            this.inflag = true;
+          }
+          if (this.endTime) {
+            this.outflag = true;
+          }
+          console.log("Attendance:", this.attendance);
+          
+          if (this.attendance.requestid) {
+            this.fetchreq(this.attendance.requestid);
+          } else {
+            console.warn("requestid が取得できません");
+          }
+        });
+    },
+
+    fetchreq(requestId) {
+      axios.get(`http://localhost:8080/user/request/${requestId}`)
+        .then(res => {
+          this.request = res.data;
+          console.log("Request:", this.request);
+        })
+        .catch(err => {
+          console.error("申請データ取得エラー", err);
+        });
+    }
   }
-
-  const user = JSON.parse(userStr);
-  const user_id = user.id;
-  this.userid = user.id;
-  this.username = user.username;
-  console.log(user_id);
-  console.log(user);
-  axios.post(`http://localhost:8080/user/check/${user_id}`, { punchDate: this.punchDate })
-    .then(() => {
-      this.fetchatt();
-    });
-},
-
-  }
-
 }
 </script>
 
 <style scoped>
+.title{
+  text-align: center;
+}
+
 .attendance-page {
   font-family: sans-serif;
   max-width: 320px;
@@ -282,6 +279,7 @@ const userStr = localStorage.getItem('user');
   justify-content: center;
   align-items: center;
   margin-bottom: 10px;
+  margin-top: 20px;
 }
 
 .btn {
@@ -307,5 +305,49 @@ const userStr = localStorage.getItem('user');
   font-size: 14px;
   color: #007acc;
   text-decoration: underline;
+}
+
+.title-date-container {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* ← 親全体を中央寄せ */
+  gap: 1em;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+/* 日付ナビを右寄せ */
+.date-nav {
+  margin-left: auto; /* これで右端に寄せる */
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+/* .title-date-container .title {
+  margin: 0;
+} */
+
+.date-nav .date {
+  margin: 0;
+  font-weight: bold;
+  min-width: 140px; /* 日付の幅を多少固定 */
+  text-align: center;
+}
+
+.date-nav button {
+  border: 1.5px solid #333;
+  background-color: #f9f9f9;
+  color: #333;
+  font-weight: bold;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.date-nav button:hover {
+  background-color: #333;
+  color: #fff;
 }
 </style>
