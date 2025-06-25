@@ -1,43 +1,76 @@
+<script setup>
+import { ref } from 'vue'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
+
+const props = defineProps({
+  type: {
+    type: String,
+    default: 'user'
+  }
+})
+
+const router = useRouter()
+const email = ref('')
+const password = ref('')
+const errorMessage = ref('')
+
+const login = async () => {
+  try {
+    const response = await axios.post('http://localhost:8080/login', {
+      email: email.value,
+      password: password.value,
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+
+    console.log('ログイン成功', response.data)
+    localStorage.setItem('user', JSON.stringify(response.data))
+
+    const categoryId = response.data.category_id
+    console.log("categoryId");
+    console.log(categoryId);
+    if (categoryId === 2) {
+      router.push('/master/home')
+      console.log("categoryadmin");
+    } else if (categoryId === 1 ) {
+      router.push(`/admin`)
+    } else if( categoryId === 0){
+      router.push(`/main`)
+    }
+    else {
+      alert('不正な権限です')
+    }
+
+  } catch (error) {
+    console.error('ログイン失敗', error)
+    errorMessage.value = 'ログインに失敗しました。メールアドレスとパスワードを確認してください。'
+  }
+}
+</script>
+
+
 <template>
   <div class="login-container">
+    <p class="back-link">
+      <router-link to="/">&lt;&lt; 戻る</router-link>
+    </p>
+
     <h2 class="title">ログイン画面</h2>
 
-    <form @submit.prevent="handleLogin">
-      <input v-model="username" type="text" placeholder="名前" class="input-box" />
-      <input v-model="password" type="password" placeholder="パスワード" class="input-box" />
-      <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
-      <button type="submit" class="login-button">ログイン</button>
-    </form>
-
+    <div class="form">
+      <input v-model="email" placeholder="メールアドレス" />
+      <input v-model="password" type="password" placeholder="パスワード" />
+      <button @click="login">ログイン</button>
+    </div>
     <p class="register-link">
       <router-link to="/register">新規登録はこちら</router-link>
     </p>
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Login',
-  data() {
-    return {
-      username: '',
-      password: '',
-      errorMessage: ''
-    }
-  },
-  methods: {
-    handleLogin() {
-      if (this.username === 'admin' && this.password === '1234') {
-        localStorage.setItem('loggedIn', 'true') // ✅ 記錄登入
-        this.errorMessage = ''
-        this.$router.push('/dashboard')
-      } else {
-        this.errorMessage = 'エラーメッセージです'
-      }
-    }
-  }
-}
-</script>
 
 <style scoped>
 .login-container {

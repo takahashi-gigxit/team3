@@ -3,13 +3,15 @@
     <h2 class="title">マイページ（カレンダー）</h2>
     
     <!-- 追加：簡易な概要説明 -->
-    <div class="summary">
-      <p>ようこそ、{{ username }}さん！</p>
-      <p>本日は {{ today }} です。</p>
-    </div>
-
+   <div class="summary" v-if="username">
+  <p>ようこそ、{{ username }}さん！</p>
+  <p>本日は {{ today }} です。</p>
+</div>
    <Calendar @select-date="goToAttendance" />
   </div>
+  <!-- <div>
+<router-link to="/attapproval" class="link-button">各種申請へ＞＞</router-link>
+  </div> -->
 </template>
 
 <script>
@@ -22,14 +24,21 @@ export default {
   },
   data() {
     return {
-      username: '山田太郎', // 将来：ログインユーザー名を取得
+      username: '', // 将来：ログインユーザー名を取得
       today: new Date().toLocaleDateString('ja-JP')
     }
   },
+
   methods: {
     goToAttendance(dateStr) {
       this.$router.push({ path: '/attendance', query: { date: dateStr } })
     }
+  },
+mounted() {
+  const userStr = localStorage.getItem('user');
+const user = JSON.parse(userStr);
+  this.username  = user.username;
+  console.log(user);
   }
 }
 </script>
