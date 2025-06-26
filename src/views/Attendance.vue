@@ -213,6 +213,7 @@ export default {
       this.startTime = this.attendance.start_time;
       this.endTime = this.attendance.end_time;
       this.attendanceSituation = this.attendance.attendance_situation || ''; // 追加
+      this.evaluation = this.attendance.evaluation;//evaluationを更新
       if (this.attendance.start_time && this.attendance.start_time !== "") {
   this.inflag = true;
 }
