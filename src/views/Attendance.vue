@@ -15,13 +15,25 @@
       </div>
 
     <!-- 出勤・退勤ボタンと時間 -->
-    <div class="time-block">
-      <button class="btn" @click="clockIn" :disabled="inflag">出勤</button>
-      <span class="time" >{{ startTime || '--:--' }}</span>
-    </div>
-    <div class="time-block">
-      <button class="btn" @click="clockOut" :disabled="outflag">退勤</button>
-      <span class="time">{{ endTime || '未打刻' }}</span>
+    <div class="attendance-controls">
+      <div class="time-block">
+        <button class="btn" @click="clockIn" :disabled="inflag">出勤</button>
+        <span class="time">{{ startTime || '--:--' }}</span>
+      </div>
+      <div class="time-block">
+        <button class="btn" @click="clockOut" :disabled="outflag">退勤</button>
+        <span class="time">{{ endTime || '未打刻' }}</span>
+      </div>
+
+      <div class="evaluation-select">
+        <label for="evaluation">今日の評価：</label>
+        <select id="evaluation" v-model="evaluation">
+          <option :value="0">-- 未選択 --</option>
+          <option :value="1">😞 悪い</option>
+          <option :value="2">😐 普通</option>
+          <option :value="3">😊 良い</option>
+        </select>
+      </div>
     </div>
 
     <!-- 申請状態表示 -->
@@ -89,7 +101,8 @@ export default {
       endTime: '',
       status:["申請中","承認済み","拒否"],
       inflag:false,
-      outflag:false
+      outflag:false,
+      evaluation: 0,  // ★ 評価状態を追加
     }
   },
   created(){
@@ -118,8 +131,15 @@ export default {
       this.endTime = ''
       this.attendance = {}
       this.request = {}
+      this.evaluation = 0  // ★ 評価リセット
       this.fetchatt()
       this.checkAndFetch()
+    },
+    // ★ 評価変更を監視し即PUT送信
+    evaluation(newVal, oldVal) {
+      if (newVal !== 0 && newVal !== oldVal) {
+        this.updateEvaluation();
+      }
     }
   },
   methods: {
@@ -246,6 +266,20 @@ const userStr = localStorage.getItem('user');
       this.fetchatt();
     });
 },
+ // ★ 評価更新用メソッド（PUTリクエスト）
+    updateEvaluation() {
+      axios.put(`http://localhost:8080/user/attendance/evaluation/${this.userid}`, {
+        date: this.punchDate,
+        evaluation: this.evaluation
+      })
+      .then(res => {
+        this.attendance = res.data;
+        console.log("評価を更新:", res.data.evaluation);
+      })
+      .catch(err => {
+        console.error("評価更新エラー", err);
+      });
+    }
 
   }
 
@@ -281,12 +315,47 @@ const userStr = localStorage.getItem('user');
   margin-bottom: 20px;
 }
 
-.time-block {
+.date-nav {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 0.5em;
+  margin-bottom: 20px;
+}
+
+.date-nav button {
+  border: 1.5px solid #333;
+  background-color: #f9f9f9;
+  color: #333;
+  font-weight: bold;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.time-block {
+  /* display: flex; */
+  justify-content: center;
+  /* align-items: center;
   margin-bottom: 10px;
-  margin-top: 20px;
+  margin-top: 20px; */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-block .btn {
+  min-width: 80px;
+  padding: 6px 12px;
+  font-size: 16px;
+}
+
+/* 時刻表示もボタンと揃う高さに */
+.time-block .time {
+  font-size: 16px;
+  min-width: 70px;
+  text-align: center;
 }
 
 .btn {
@@ -356,5 +425,36 @@ const userStr = localStorage.getItem('user');
 .date-nav button:hover {
   background-color: #333;
   color: #fff;
+}
+
+.evaluation-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.evaluation-select label {
+  user-select: none;
+}
+
+.evaluation-select select {
+  padding: 6px 12px;
+  font-size: 16px;
+  border: 2px solid black;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: white;
+  transition: border-color 0.3s ease;
+}
+
+.attendance-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px; /* 間隔調整 */
+  margin-top: 20px;
+  flex-wrap: wrap; /* スマホなど幅狭いときは折り返し */
 }
 </style>
