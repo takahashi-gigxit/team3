@@ -17,6 +17,7 @@
 <script>
 import Calendar from './Calendar.vue'
 
+import axios from 'axios'
 export default {
   name: 'UserMain',
   components: {
@@ -25,7 +26,7 @@ export default {
   data() {
     return {
       username: '', // 将来：ログインユーザー名を取得
-      today: new Date().toLocaleDateString('ja-JP')
+      today: new Date().toLocaleDateString('ja-JP'),
     }
   },
 
@@ -39,6 +40,8 @@ mounted() {
 const user = JSON.parse(userStr);
   this.username  = user.username;
   console.log(user);
+
+    this.username = user.username || ''
   }
 }
 </script>

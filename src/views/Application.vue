@@ -8,6 +8,7 @@
 
     <h2 class="title">申請画面</h2>
     <p class="date">{{ displaydate }}</p>
+    <p>有給残日数：{{ paidDate }} 日</p> <!-- ★ 追加表示 -->
 
     <!-- 申請ボタン -->
     <div class="button-grid">
@@ -15,7 +16,7 @@
         <button
           class="app-btn"
           @click="confirmApply(type.key)"
-          :disabled="request[type.key] === 1"
+          :disabled="request[type.key] === 1 || (type.key === 'paid' && paidDate <= 0)"
         >
           {{ type.label }}申請
         </button>
@@ -68,6 +69,7 @@ export default {
       showCancelDialog: false,
       cancelType: '',
       request:{},
+      paidDate: 0,
       types: [
         { key: 'late', label: '遅刻' },
         { key: 'early', label: '早退' },
@@ -102,6 +104,9 @@ export default {
       axios.get(`http://localhost:8080/user/request/${this.Requestid}`)
         .then(res => {
           this.request = res.data;
+          // ユーザーIDを元に有給残日数を取得
+          this.fetchPaidDate(this.request.userid);
+
           axios.get(`http://localhost:8080/user/attendance/${this.Requestid}`)
           .then(res => {
             let year, month, day;
@@ -112,6 +117,17 @@ export default {
         })
         .catch(err => {
           console.error('Request取得エラー', err);
+        });
+    },
+    fetchPaidDate(userId){
+      // 修正：ユーザーIDを使って専用エンドポイントを呼ぶ
+      axios.get(`http://localhost:8080/user/user/${userId}/paidDate`)
+        .then(res => {
+          this.paidDate = res.data.paidDate || 0;
+        })
+        .catch(err => {
+          console.error('有給残日数取得エラー', err);
+          this.paidDate = 0;
         });
     },
     confirmApply(type) {
@@ -145,30 +161,14 @@ export default {
           this.fetchRequest();
         })
         .catch(err => {
-          alert('申請に失敗しました');
+          if (err.response && err.response.status === 400) {
+            alert(err.response.data.message || '有給残日数がありません。');
+          } else {
+            alert('申請に失敗しました');
+          }
           console.error(err);
           this.showDialog = false;
         });
-
-      // fetch('http://localhost:8080/api/application', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     userId: 1,
-      //     type: this.currentType,
-      //     date: new Date().toISOString().split('T')[0]
-      //   })
-      // })
-      //   .then(res => res.json())
-      //   .then(() => {
-      //     alert(`${this.currentType}申請を送信しました。`)
-      //     this.showDialog = false
-      //   })
-      //   .catch(err => {
-      //     alert('申請に失敗しました')
-      //     console.error(err)
-      //     this.showDialog = false
-      //   })
     },
     submitCancel() {
       const updatedRequest = {
