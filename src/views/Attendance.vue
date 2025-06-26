@@ -25,6 +25,14 @@
         <span class="time">{{ endTime || '未打刻' }}</span>
       </div>
 
+      <div class="attendance-situation-select">
+        <label for="attendanceSituation">出社区分：</label>
+        <select id="attendanceSituation" v-model="attendanceSituation" @change="updateAttendanceSituation">
+          <option value="">-- 選択してください --</option>
+          <option v-for="option in attendanceSituations" :key="option" :value="option">{{ option }}</option>
+        </select>
+      </div>
+
       <div class="evaluation-select">
         <label for="evaluation">今日の評価：</label>
         <select id="evaluation" v-model="evaluation">
@@ -103,6 +111,13 @@ export default {
       inflag:false,
       outflag:false,
       evaluation: 0,  // ★ 評価状態を追加
+      attendanceSituations: [ // 選択肢リスト
+      '出社',
+      'リモート',
+      '離席',
+      '打ち合わせ中',
+      '帰宅'
+    ],
     }
   },
   created(){
@@ -197,6 +212,7 @@ export default {
       this.attendance = res.data;
       this.startTime = this.attendance.start_time;
       this.endTime = this.attendance.end_time;
+      this.attendanceSituation = this.attendance.attendance_situation || ''; // 追加
       if (this.attendance.start_time && this.attendance.start_time !== "") {
   this.inflag = true;
 }
@@ -279,8 +295,20 @@ const userStr = localStorage.getItem('user');
       .catch(err => {
         console.error("評価更新エラー", err);
       });
+    },
+    updateAttendanceSituation() {
+      axios.put(`http://localhost:8080/user/attendance/situation/${this.userid}`, {
+        date: this.punchDate,
+        attendance_situation: this.attendanceSituation
+      })
+      .then(res => {
+        this.attendance = res.data;
+        console.log("出社区分を更新:", res.data.attendance_situation);
+      })
+      .catch(err => {
+        console.error("出社区分更新エラー", err);
+      });
     }
-
   }
 
 }
@@ -456,5 +484,27 @@ const userStr = localStorage.getItem('user');
   gap: 30px; /* 間隔調整 */
   margin-top: 20px;
   flex-wrap: wrap; /* スマホなど幅狭いときは折り返し */
+}
+
+.attendance-situation-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.attendance-situation-select label {
+  user-select: none;
+}
+
+.attendance-situation-select select {
+  padding: 6px 12px;
+  font-size: 16px;
+  border: 2px solid black;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: white;
+  transition: border-color 0.3s ease;
 }
 </style>
