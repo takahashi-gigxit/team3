@@ -35,9 +35,9 @@ const login = async () => {
     if (categoryId === 2) {
       router.push('/master/home')
       console.log("categoryadmin");
-    } else if (categoryId === 1 ) {
+    } else if (categoryId === 1) {
       router.push(`/admin`)
-    } else if( categoryId === 0){
+    } else if (categoryId === 0) {
       router.push(`/main`)
     }
     else {
@@ -60,16 +60,20 @@ const login = async () => {
 
     <h2 class="title">ログイン画面</h2>
 
-    <div class="form">
+    <form @submit.prevent="login" class="form">
       <input v-model="email" placeholder="メールアドレス" />
       <input v-model="password" type="password" placeholder="パスワード" />
-      <button @click="login">ログイン</button>
-    </div>
+      <button type="submit">ログイン</button>
+    </form>
+
+    <p v-if="errorMessage" style="color: red; margin-top: 10px;">{{ errorMessage }}</p>
+
     <p class="register-link">
       <router-link to="/register">新規登録はこちら</router-link>
     </p>
   </div>
 </template>
+
 
 
 <style scoped>

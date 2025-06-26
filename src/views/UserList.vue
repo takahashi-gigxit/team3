@@ -4,6 +4,10 @@
     <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
     <h2>ユーザー一覧画面</h2>
 
+    <div>
+      <v-text-field type="text" v-model="keyword" label="検索"></v-text-field>
+    </div>
+
     <table>
       <thead>
         <tr>
@@ -20,7 +24,8 @@
         <tr v-if="users.length === 0">
           <td colspan="7">現在ユーザーはいません</td>
         </tr>
-        <tr v-else v-for="user in users" :key="user.id">
+        <!-- <tr v-else v-for="user in users" :key="user.id"> -->
+        <tr v-else v-for="user in filtered" :key="user.id"> 
           <td>{{ user.id }}</td>
           <td>{{ user.username }}</td>
           <td>{{ user.password }}</td>
@@ -35,7 +40,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
@@ -43,6 +48,7 @@ const users = ref([])
 const showDialog = ref(false)
 const userIdToDelete = ref(null)
 const router = useRouter()
+const keyword = ref('')
 
 const getData = async () => {
   try {
@@ -84,6 +90,28 @@ const editUser = (id) => {
   router.push(`/user/edit/${id}`)
 }
 
+const lowerKeywords = computed(() => {
+  return keyword.value.trim().toLowerCase().split(/\s+/).filter(k => k !== "");
+});
+
+const filtered = computed(() => {
+  // キーワードが空なら全件表示！
+  if (lowerKeywords.value.length === 0) {
+    return users.value;
+  }
+
+  // キーワードがあるときは絞り込み
+  return users.value.filter(user => {
+    const name = user.username.toLowerCase();
+    const email = user.email.toLowerCase();
+    return lowerKeywords.value.every(kw =>
+      name.includes(kw) || email.includes(kw)
+    );
+  });
+});
+
+
+
 onMounted(getData)
 </script>
 
@@ -96,10 +124,12 @@ onMounted(getData)
   font-family: sans-serif;
   position: relative;
 }
+
 .back {
   display: inline-block;
   margin-bottom: 10px;
 }
+
 .logout-link {
   position: absolute;
   right: 20px;
@@ -107,19 +137,24 @@ onMounted(getData)
   font-size: 14px;
   color: #4a97c8;
 }
+
 table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
 }
-th, td {
+
+th,
+td {
   border: 1px solid #ccc;
   padding: 6px;
   text-align: center;
 }
+
 .notice {
   color: #555;
 }
+
 .dialog {
   background: #fff;
   border: 1px solid #ccc;
@@ -128,9 +163,10 @@ th, td {
   top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   z-index: 1000;
 }
+
 .dialog button {
   margin: 10px;
 }

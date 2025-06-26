@@ -2,7 +2,13 @@
   <div class="container">
     <router-link to="/master/home" class="back">&lt;&lt;戻る</router-link>
     <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
-    <h2>申請</h2> <table>
+    <h2>申請</h2>
+
+    <div>
+      <v-text-field type="text" v-model="keyword" label="検索"></v-text-field>
+    </div>
+
+    <table>
       <thead>
         <tr>
           <th>日付</th>
@@ -15,12 +21,13 @@
         <tr v-if="applications.length === 0">
           <td colspan="4">現在データはありません</td>
         </tr>
-        <tr v-else v-for="item in applications" :key="item.id">
+        <!-- <tr v-else v-for="item in applications" :key="item.id"> -->
+          <tr v-else v-for="item in filtered" :key="item.id">
           <td>{{ item.date }}</td>
           <td>{{ item.username }}</td>
           <td>
             {{ item.requestType }}
-            </td>
+          </td>
           <td><button @click="confirmDelete(item.deleteId, item.recordType)">削除</button></td>
         </tr>
       </tbody>
@@ -35,12 +42,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+// import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios';
 
 const applications = ref([]);
 const showDialog = ref(false);
 const itemToDelete = ref(null);
+const keyword = ref('')
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -145,6 +154,27 @@ const cancelDialog = () => {
   itemToDelete.value = null;
 };
 
+const lowerKeywords = computed(() => {
+  return keyword.value.trim().toLowerCase().split(/\s+/).filter(k => k !== "");
+});
+
+const filtered = computed(() => {
+  if (lowerKeywords.value.length === 0) {
+    return applications.value;
+  }
+
+  return applications.value.filter(item => {
+    const name = item.username?.toLowerCase() || '';
+    const type = item.requestType?.toLowerCase() || '';
+    const date = item.date?.toLowerCase?.() || ''; // 念のため
+
+    return lowerKeywords.value.every(kw =>
+      name.includes(kw) || type.includes(kw) || date.includes(kw)
+    );
+  });
+});
+
+
 onMounted(() => {
   fetchAllApplications();
 });
@@ -159,10 +189,12 @@ onMounted(() => {
   font-family: sans-serif;
   position: relative;
 }
+
 .back {
   display: inline-block;
   margin-bottom: 10px;
 }
+
 .logout-link {
   position: absolute;
   right: 20px;
@@ -170,19 +202,24 @@ onMounted(() => {
   font-size: 14px;
   color: #4a97c8;
 }
+
 table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
 }
-th, td {
+
+th,
+td {
   border: 1px solid gray;
   padding: 6px;
   text-align: center;
 }
+
 .notice {
   color: #555;
 }
+
 .dialog {
   background: gray;
   border: 1px solid gray;
@@ -191,9 +228,10 @@ th, td {
   top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   z-index: 1000;
 }
+
 .dialog button {
   margin: 10px;
 }
