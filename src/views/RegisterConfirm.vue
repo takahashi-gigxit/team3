@@ -57,7 +57,7 @@ export default {
   methods: {
     async registerUser() {
       try {
-        await axios.post('/register', this.userDraft, {
+        await axios.post('http://localhost:8080/register', this.userDraft, {
           headers: {
             'Content-Type': 'application/json'
           }

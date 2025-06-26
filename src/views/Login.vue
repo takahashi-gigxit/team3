@@ -17,7 +17,7 @@ const errorMessage = ref('')
 
 const login = async () => {
   try {
-    const response = await axios.post('/login', {
+    const response = await axios.post('http://localhost:8080/login', {
       email: email.value,
       password: password.value,
     }, {
@@ -30,12 +30,17 @@ const login = async () => {
     localStorage.setItem('user', JSON.stringify(response.data))
 
     const categoryId = response.data.category_id
-
+    console.log("categoryId");
+    console.log(categoryId);
     if (categoryId === 2) {
-      router.push('/admin')
-    } else if (categoryId === 1 || categoryId === 0) {
+      router.push('/master/home')
+      console.log("categoryadmin");
+    } else if (categoryId === 1 ) {
+      router.push(`/admin`)
+    } else if( categoryId === 0){
       router.push(`/main`)
-    } else {
+    }
+    else {
       alert('不正な権限です')
     }
 
