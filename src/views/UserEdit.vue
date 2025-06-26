@@ -58,7 +58,7 @@ const getData = async () => {
     form.value.username = userData.username
     form.value.password = userData.password
     form.value.email = userData.email
-    form.value.isAdmin = userData.category_id === 2
+    form.value.isAdmin = userData.category_id === 1
   } catch (error) {
     console.error('ユーザーデータの取得中にエラーが発生しました:', error)
     alert('ユーザーデータの読み込みに失敗しました。')
@@ -77,7 +77,7 @@ const updateUser = async () => {
       username: form.value.username,
       password: form.value.password,
       email: form.value.email,
-      category_id: form.value.isAdmin ? 2 : 0
+      category_id: form.value.isAdmin ? 1 : 0
     }
     await axios.put(`http://localhost:8080/user/edit/${userId.value}`, payload)
     showDialog.value = false

@@ -1,17 +1,14 @@
 <template>
   <div class="master-home">
-    <!-- 登出連結 -->
     <p class="logout-link">
       <router-link to="/logout">ログアウト</router-link>
     </p>
 
-    <!-- 歡迎語 -->
     <h2>ようこそ（{{ master.username }}）さん</h2>
 
-    <!-- 功能入口 -->
     <div class="link-group">
       <router-link to="/user/list" class="link-button">ユーザー一覧画面へ</router-link>
-      <router-link to="/application/delete" class="link-button">申請一覧画面へ</router-link>
+      <router-link to="/applicationlist" class="link-button">申請一覧画面へ</router-link>
     </div>
   </div>
 </template>

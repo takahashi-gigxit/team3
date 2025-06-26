@@ -25,7 +25,7 @@
           <td>{{ user.username }}</td>
           <td>{{ user.password }}</td>
           <td>{{ user.email }}</td>
-          <td><input type="checkbox" :checked="user.category_id === 2" disabled /></td>
+          <td><input type="checkbox" :checked="user.category_id === 1" disabled /></td>
           <td><button><router-link :to="'/user/edit/' + user.id">編集</router-link></button></td>
           <td><button @click="confirmDelete(user.id)">削除</button></td>
         </tr>
@@ -135,4 +135,3 @@ th, td {
   margin: 10px;
 }
 </style>
-
