@@ -38,6 +38,9 @@
         <p>
         <div v-if="request.paid !== 0">有給申請  <span>{{ status[request.paid_app] }}</span></div>
         </p>
+        <p>
+          <div v-if="request.reason !== null">理由  <span>{{ request.reason }}</span></div>
+        </p>
     </div>
     <router-link
   v-if="request && request.id"

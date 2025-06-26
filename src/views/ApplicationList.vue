@@ -8,12 +8,13 @@
           <th>日付</th>
           <th>名前</th>
           <th>種類</th>
+          <th>理由</th>
           <th>削除</th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="applications.length === 0">
-          <td colspan="4">現在データはありません</td>
+          <td colspan="5">現在データはありません</td>
         </tr>
         <tr v-else v-for="item in applications" :key="item.id">
           <td>{{ item.date }}</td>
@@ -21,6 +22,7 @@
           <td>
             {{ item.requestType }}
             </td>
+          <td>{{ item.reason }}</td>
           <td><button @click="confirmDelete(item.deleteId, item.recordType)">削除</button></td>
         </tr>
       </tbody>

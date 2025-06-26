@@ -12,6 +12,7 @@
         <p>申請内容：{{ app.content }}</p>
         <p>申請日：{{ app.date }}</p>
         <p>状態：{{ app.status }}</p>
+        <p>理由：{{ app.reason }}</p>
       </li>
     </ul>
   </div>
@@ -51,6 +52,7 @@ export default {
         .then(data => {
           // APIから既に必要なデータが整形されているので、そのまま格納
           this.applications = data
+          console.log(data);
         })
         .catch(err => {
           console.error('申請一覧取得エラー:', err)

@@ -30,6 +30,7 @@ const routes = [
   { path: '/register', name: 'Register', component: Register },
   { path: '/register/confirm', name: 'RegisterConfirm', component: RegisterConfirm },
   { path: '/logout', name: 'Logout', component: Logout },
+  {path:'/applist/user/:userId',name:'UserAppList',component: UserAppList},
 
   //  一般ユーザー画面
   { path: '/main', name: 'UserMain', component: UserMain },
@@ -37,7 +38,6 @@ const routes = [
   { path: '/application/:requestId', name: 'Application', component: Application },
   { path: '/profile/update/done', name: 'ProfileUpdateDone', component: ProfileUpdateDone },
    { path: '/attendance/:date', name: 'AttendanceWithDate', component: Attendance },
-  {path:'/applist/user/:userId',name:'UserAppList',component: UserAppList},
 
 
    // 管理者画面

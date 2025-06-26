@@ -1,3 +1,4 @@
+
 <template>
   <div class="application-page">
     <!-- ヘッダー -->
@@ -8,24 +9,29 @@
 
     <h2 class="title">申請画面</h2>
     <p class="date">{{ displaydate }}</p>
+    <p>有給残日数：{{ paidDate }} 日</p> <!-- ★ 追加表示 -->
 
     <!-- 申請ボタン -->
     <div class="button-grid">
       <div class="button-row" v-for="type in types" :key="type.key">
-        <button
-          class="app-btn"
-          @click="confirmApply(type.key)"
-          :disabled="request[type.key] === 1"
-        >
+        <button class="app-btn" @click="confirmApply(type.key)" :disabled="request[type.key] === 1 || (type.key === 'paid' && paidDate <= 0) ">
           {{ type.label }}申請
         </button>
 
-        <button 
-          v-if="request[type.key] === 1" 
-          class="cancel-btn" 
-          @click="confirmCancel(type.key)"
-          >取消
+        <button v-if="request[type.key] === 1" class="cancel-btn" @click="confirmCancel(type.key)">取消
         </button>
+      </div>
+    </div>
+
+    <!-- 理由入力ダイアログ -->
+    <div v-if="showReasonDialog" class="dialog-overlay">
+      <div class="dialog-box">
+        <h3 class="dialog-title">{{ currentTypeJapanese }}の理由を入力してください</h3>
+        <textarea v-model="reason" rows="4" style="width: 100%; resize: none;"></textarea>
+        <div class="dialog-actions" style="margin-top: 12px;">
+          <button class="confirm-button" @click="proceedToConfirmation">次へ</button>
+          <button class="cancel-button" @click="cancelReasonInput">キャンセル</button>
+        </div>
       </div>
     </div>
 
@@ -60,14 +66,16 @@ export default {
   data() {
     const today = new Date()
     return {
-      Requestid:this.$route.params.requestId,
-      displaydate:'',
-      selectdate:'',
+      Requestid: this.$route.params.requestId,
+      displaydate: '',
+      selectdate: '',
       showDialog: false,
+      showReasonDialog: false,
       currentType: '',
       showCancelDialog: false,
       cancelType: '',
-      request:{},
+      request: {},
+      paidDate:0,
       types: [
         { key: 'late', label: '遅刻' },
         { key: 'early', label: '早退' },
@@ -102,29 +110,57 @@ export default {
       axios.get(`http://localhost:8080/user/request/${this.Requestid}`)
         .then(res => {
           this.request = res.data;
+          // ユーザーIDを元に有給残日数を取得
+          this.fetchPaidDate(this.request.userid);
+
           axios.get(`http://localhost:8080/user/attendance/${this.Requestid}`)
-          .then(res => {
-            let year, month, day;
-                [year, month, day] = res.data.date.split('-')
-                this.displaydate =  `${year}年${month}月${day}日`;
-                this.selectdate = res.data.date;
-          })
+            .then(res => {
+              let year, month, day;
+              [year, month, day] = res.data.date.split('-')
+              this.displaydate = `${year}年${month}月${day}日`;
+              this.selectdate = res.data.date;
+            })
         })
         .catch(err => {
           console.error('Request取得エラー', err);
         });
     },
+      fetchPaidDate(userId){
+      // 修正：ユーザーIDを使って専用エンドポイントを呼ぶ
+      axios.get(`http://localhost:8080/user/user/${userId}/paidDate`)
+        .then(res => {
+          this.paidDate = res.data.paidDate || 0;
+        })
+        .catch(err => {
+          console.error('有給残日数取得エラー', err);
+          this.paidDate = 0;
+        });
+    },
     confirmApply(type) {
       this.currentType = type
-      this.showDialog = true
+      this.reason = '' // 初期化（念のため）
+      this.showReasonDialog = true // まずは理由入力のダイアログを出す
     },
     confirmCancel(type) {
       this.cancelType = type;
       this.showCancelDialog = true;
     },
+    proceedToConfirmation() {
+      if (!this.reason.trim()) {
+        alert("理由を入力してください");
+        return;
+      }
+      this.showReasonDialog = false;
+      this.showDialog = true;
+    },
+    cancelReasonInput() {
+      this.reason = '';
+      this.currentType = '';
+      this.showReasonDialog = false;
+    },
     submitApplication() {
       const updatedRequest = {
-        ...this.request,//requestのコピーを作成
+        ...this.request,
         late: 0,
         early: 0,
         absence: 0,
@@ -133,15 +169,17 @@ export default {
         early_app: 0,
         absence_app: 0,
         paid_app: 0,
+        reason: this.reason, // 理由をここに含める！
       };
 
-      // 押されたボタンの種類のみ 1 をセット
       updatedRequest[this.currentType] = 1;
 
-       axios.put(`http://localhost:8080/user/request/${this.Requestid}`, updatedRequest)
+      axios.put(`http://localhost:8080/user/request/${this.Requestid}`, updatedRequest)
         .then(() => {
           alert(`${this.currentTypeJapanese}申請を送信しました。`);
           this.showDialog = false;
+          this.reason = '';
+          this.currentType = '';
           this.fetchRequest();
         })
         .catch(err => {
@@ -181,6 +219,7 @@ export default {
         early_app: 0,
         absence_app: 0,
         paid_app: 0,
+        reason: '',
       };
       updatedRequest[this.cancelType] = 0;
 
@@ -231,11 +270,12 @@ export default {
   align-items: center;
   gap: 20px;
   margin-bottom: 30px;
-  width: 100%; 
-  max-width: 320px; 
+  width: 100%;
+  max-width: 320px;
 }
 
-.app-btn, .cancel-btn {
+.app-btn,
+.cancel-btn {
   flex: 1 1 140px;
   padding: 10px 0;
   border: 2px solid black;
@@ -298,7 +338,7 @@ export default {
   justify-content: center;
   gap: 12px;
   width: 60%;
-  max-width: 320px; 
+  max-width: 320px;
 }
 
 
@@ -320,13 +360,14 @@ export default {
 
 /* 取消ボタン */
 .cancel-btn {
-  background-color: #e74c3c; /* 赤色 */
+  background-color: #e74c3c;
+  /* 赤色 */
   color: white;
   border-color: #e74c3c;
 }
 
 .cancel-btn:hover {
-  background-color: #c0392b; /* 濃い赤 */
+  background-color: #c0392b;
+  /* 濃い赤 */
 }
-
 </style>
