@@ -1,231 +1,229 @@
 <template>
-  <div class="application-page">
-    <!-- ヘッダー -->
-    <div class="header">
-      <router-link class="back-link" to="/attendance">&lt;&lt; 戻る</router-link>
-      <router-link class="logout" to="/logout">ログアウト</router-link>
+  <div class="container">
+    <router-link to="/master/home" class="back">&lt;&lt;戻る</router-link>
+    <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
+    <h2>申請</h2>
+    <div>
+      <v-text-field type="text" v-model="keyword" label="検索"></v-text-field>
     </div>
+    <table>
+      <thead>
+        <tr>
+          <th>日付</th>
+          <th>名前</th>
+          <th>種類</th>
+          <th>理由</th>
+          <th>削除</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-if="applications.length === 0">
+          <td colspan="5">現在データはありません</td>
+        </tr>
+        <tr v-else v-for="item in filtered" :key="item.id">
+          <td>{{ item.date }}</td>
+          <td>{{ item.username }}</td>
+          <td>
+            {{ item.requestType }}
+            </td>
+          <td>{{ item.reason }}</td>
+          <td><button @click="confirmDelete(item.deleteId, item.recordType)">削除</button></td>
+        </tr>
+      </tbody>
+    </table>
 
-    <h2 class="title">申請画面</h2>
-    <p class="date">{{ today }}</p>
-
-    <!-- 申請ボタン -->
-    <div class="button-grid">
-      <button
-        class="app-btn"
-        @click="confirmApply('late')"
-        :disabled="request.late === 1"
-      >遅刻申請</button>
-
-      <button
-        class="app-btn"
-        @click="confirmApply('early')"
-        :disabled="request.early === 1"
-      >早退申請</button>
-
-      <button
-        class="app-btn"
-        @click="confirmApply('absence')"
-        :disabled="request.absence === 1"
-      >欠勤申請</button>
-
-      <button
-        class="app-btn"
-        @click="confirmApply('paid')"
-        :disabled="request.paid === 1"
-      >有給申請</button>
-    </div>
-
-    <!-- ダイアログ -->
-    <div v-if="showDialog" class="dialog-overlay">
-      <div class="dialog-box">
-        <h3 class="dialog-title">{{ currentType }}申請をしますか？</h3>
-        <div class="dialog-actions">
-          <button class="confirm-button" @click="submitApplication">はい</button>
-          <button class="cancel-button" @click="showDialog = false">いいえ</button>
-        </div>
-      </div>
+    <div v-if="showDialog" class="dialog">
+      <p>削除しますか</p>
+      <button @click="deleteApplication">はい</button>
+      <button @click="cancelDialog">いいえ</button>
     </div>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios';
-export default {
-  name: 'Application',
-  props: ['requestId'],
-  data() {
-    const today = new Date()
-    return {
-      Requestid:this.$route.params.requestId,
-      today: today.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }),
-      showDialog: false,
-      currentType: '',
-      request:{},
-    }
-  },
-  computed: {
-    currentTypeJapanese() {
-      return {
-        late: '遅刻',
-        early: '早退',
-        absence: '欠勤',
-        paid: '有給'
-      }[this.currentType] || '';
-    }
-  },
-  created() {
-    this.fetchRequest();
-  },
-  methods: {
-    fetchRequest() {
-      axios.get(`http://localhost:8080/user/request/${this.Requestid}`)
-        .then(res => {
-          this.request = res.data;
-        })
-        .catch(err => {
-          console.error('Request取得エラー', err);
-        });
-    },
-    confirmApply(type) {
-      this.currentType = type
-      this.showDialog = true
-    },
-    submitApplication() {
-      const updatedRequest = {
-        ...this.request,//requestのコピーを作成
-        late: 0,
-        early: 0,
-        absence: 0,
-        paid: 0,
-        late_app: 0,
-        early_app: 0,
-        absence_app: 0,
-        paid_app: 0,
-      };
 
-      // 押されたボタンの種類のみ 1 をセット
-      updatedRequest[this.currentType] = 1;
+const applications = ref([]);
+const showDialog = ref(false);
+const itemToDelete = ref(null);
 
-       axios.put(`http://localhost:8080/user/request/${this.Requestid}`, updatedRequest)
-        .then(() => {
-          alert(`${this.currentTypeJapanese}申請を送信しました。`);
-          this.showDialog = false;
-          this.fetchRequest();
-        })
-        .catch(err => {
-          alert('申請に失敗しました');
-          console.error(err);
-          this.showDialog = false;
-        });
-      // fetch('http://localhost:8080/api/application', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     userId: 1,
-      //     type: this.currentType,
-      //     date: new Date().toISOString().split('T')[0]
-      //   })
-      // })
-      //   .then(res => res.json())
-      //   .then(() => {
-      //     alert(`${this.currentType}申請を送信しました。`)
-      //     this.showDialog = false
-      //   })
-      //   .catch(err => {
-      //     alert('申請に失敗しました')
-      //     console.error(err)
-      //     this.showDialog = false
-      //   })
-    }
+const keyword = ref('')
+const API_BASE_URL = 'http://localhost:8080';
+
+const fetchUsers = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/user/list`);
+    return response.data;
+  } catch (error) {
+    console.error('ユーザーの取得中にエラーが発生しました:', error);
+    return [];
   }
-}
+};
+
+const fetchAttendances = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/application/attendance`);
+    return response.data;
+  } catch (error) {
+    console.error('勤怠記録の取得中にエラーが発生しました:', error);
+    return [];
+  }
+};
+
+const fetchRequests = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/application/request`);
+    return response.data;
+  } catch (error) {
+    console.error('申請記録の取得中にエラーが発生しました:', error);
+    return [];
+  }
+};
+
+const fetchAllApplications = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/application/combined`);
+    applications.value = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+  } catch (error) {
+    console.error('結合された申請データの取得に失敗しました:', error);
+    applications.value = [];
+  }
+};
+
+const getApplicationType = (item) => {
+  const types = [];
+  if (item.paid === 1) types.push('有給');
+  if (item.early === 1) types.push('早退');
+  if (item.absence === 1) types.push('欠勤');
+  if (item.late === 1) types.push('遅刻');
+  return types.length > 0 ? types.join(', ') : '情報なし';
+};
+
+const confirmDelete = (id, type) => {
+  itemToDelete.value = { id, type };
+  showDialog.value = true;
+};
+
+const deleteApplication = async () => {
+  if (!itemToDelete.value || !itemToDelete.value.id) {
+    alert('削除対象が選択されていません。');
+    return;
+  }
+
+  const { id, type } = itemToDelete.value;
+  let url = '';
+
+  try {
+    if (type === 'request') {
+      url = `${API_BASE_URL}/application/delete/${id}`;
+      await axios.delete(url);
+      alert('申請が正常に削除されました。');
+
+      applications.value = applications.value.filter(item => !(item.recordType === 'request' && item.deleteId === id));
+
+    } else if (type === 'attendance') {
+
+      url = `${API_BASE_URL}/application/attendance/delete/${id}`;
+      await axios.delete(url);
+      alert('勤怠記録が正常に削除されました。');
+      applications.value = applications.value.filter(item => !(item.recordType === 'attendance' && item.deleteId === id));
+
+    } else {
+      alert('不明なタイプのレコードです。');
+    }
+
+    fetchAllApplications();
+
+  } catch (error) {
+    console.error('削除中にエラーが発生しました:', error);
+    alert('削除中にエラーが発生しました。詳細はコンソールを確認してください。');
+    if (error.response) {
+      console.error("エラーレスポンスデータ:", error.response.data);
+      console.error("エラーレスポンスステータス:", error.response.status);
+    }
+  } finally {
+    showDialog.value = false;
+    itemToDelete.value = null;
+  }
+};
+const cancelDialog = () => {
+  showDialog.value = false;
+  itemToDelete.value = null;
+};
+
+
+const lowerKeywords = computed(() => {
+  return keyword.value.trim().toLowerCase().split(/\s+/).filter(k => k !== "");
+});
+
+const filtered = computed(() => {
+  if (lowerKeywords.value.length === 0) {
+    return applications.value;
+  }
+
+  return applications.value.filter(item => {
+    const name = item.username?.toLowerCase() || '';
+    const type = item.requestType?.toLowerCase() || '';
+    const date = item.date?.toLowerCase?.() || ''; // 念のため
+
+    return lowerKeywords.value.every(kw =>
+      name.includes(kw) || type.includes(kw) || date.includes(kw)
+    );
+  });
+});
+
+
+onMounted(() => {
+  fetchAllApplications();
+});
 </script>
 
 <style scoped>
-.application-page {
-  font-family: sans-serif;
-  max-width: 320px;
-  margin: auto;
+.container {
+  border: 2px solid green;
+  max-width: 800px;
+  margin: 20px auto;
   padding: 20px;
-  text-align: center;
+  font-family: sans-serif;
+  position: relative;
 }
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
+.back {
+  display: inline-block;
   margin-bottom: 10px;
 }
-
-.title {
-  margin: 10px 0;
-  font-size: 20px;
-}
-
-.date {
-  margin-bottom: 20px;
-}
-
-.button-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 30px;
-}
-
-.app-btn {
-  border: 2px solid black;
-  background: white;
-  padding: 10px;
-  cursor: pointer;
+.logout-link {
+  position: absolute;
+  right: 20px;
+  top: 10px;
   font-size: 14px;
+  color: #4a97c8;
 }
-
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
+table {
   width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.dialog-box {
-  background: white;
-  padding: 20px;
-  width: 240px;
-  border-radius: 8px;
-  text-align: center;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-}
-
-.dialog-title {
-  font-size: 16px;
+  border-collapse: collapse;
   margin-bottom: 20px;
 }
-
-.dialog-actions {
-  display: flex;
-  justify-content: space-around;
+th, td {
+  border: 1px solid gray;
+  padding: 6px;
+  text-align: center;
 }
-
-.confirm-button {
-  background-color: #007acc;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  cursor: pointer;
+.notice {
+  color: #555;
 }
-
-.cancel-button {
-  background-color: #ccc;
-  color: black;
-  border: none;
-  padding: 8px 16px;
-  cursor: pointer;
+.dialog {
+  background: gray;
+  border: 1px solid gray;
+  padding: 20px;
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+.dialog button {
+  margin: 10px;
 }
 </style>
