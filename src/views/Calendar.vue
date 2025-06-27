@@ -2,7 +2,6 @@
   <div class="calendar-container">
     <div class="header">
       <!-- ログアウトリンク -->
-      <h2 v-if="username">ようこそ {{ username }} さん</h2>
       <h3>勤怠管理</h3>
 
       <!-- 現在の年月表示 -->
@@ -39,15 +38,21 @@
         </tr>
       </tbody>
     </table>
+
+
     <!-- 注釈（凡例） -->
 <div class="legend">
   <div><span class="box start"></span> 出勤のみ</div>
   <div><span class="box end"></span> 退勤のみ</div>
   <div><span class="box both"></span> 出退勤済み</div>
 </div>
+
+
 <div class="total-time" style="margin-top: 20px;">
   {{ month + 1 }}月の合計勤務時間: <strong>{{ totalWorkHours }}</strong>
 </div>
+
+
   <!-- 申請一覧リンク -->
     <router-link :to="{ name: 'UserAppList', params: { userId: user_id } }" class="link-button">
   申請一覧へ＞＞
@@ -80,7 +85,8 @@ export default {
       //クリックされた日付、月を保存してリンクに出す用の変数
       selectedYearForRoute: null,
       selectedMonthForRoute: null,
-      selectedDayForRoute: null
+      selectedDayForRoute: null,
+      weeklyWeather: []  // 今週の天気情報を格納
     }
   },
   computed: {
@@ -245,9 +251,70 @@ calculateTotalHours() {
   const minutes = totalMinutes % 60
   this.totalWorkHours = `${hours}時間 ${minutes}分`
 },
+fetchWeather() {
+  const appid = 'de06313875fc54d7355f3c834958d9e5';
+  const city = 'Tokyo,jp';
+
+  const url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&lang=ja&appid=${appid}`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(obj => {
+      // 日付ごとにまとめる
+      const dailyMap = {};
+
+      obj.list.forEach(item => {
+        const dateKey = item.dt_txt.split(' ')[0]; // "YYYY-MM-DD"
+        const temp = item.main.temp;
+        const weather = item.weather[0].description;
+
+        if (!dailyMap[dateKey]) {
+          dailyMap[dateKey] = {
+            temps: [],
+            weatherCounts: {}
+          };
+        }
+
+        dailyMap[dateKey].temps.push(temp);
+
+        // よく出る天気を代表として採用
+        const desc = weather;
+        dailyMap[dateKey].weatherCounts[desc] = (dailyMap[dateKey].weatherCounts[desc] || 0) + 1;
+      });
+
+      // 最終的に配列化して上位5件取得
+      this.weeklyWeather = Object.entries(dailyMap).slice(0, 5).map(([dateStr, data]) => {
+        const date = new Date(dateStr);
+        const weekday = date.toLocaleDateString('ja-JP', {
+          month: 'numeric',
+          day: 'numeric',
+          weekday: 'short'
+        });
+
+        // 天気の中で一番出現頻度の高いもの
+        const weather = Object.entries(data.weatherCounts).sort((a, b) => b[1] - a[1])[0][0];
+
+        const temps = data.temps;
+        const tempMin = Math.round(Math.min(...temps));
+        const tempMax = Math.round(Math.max(...temps));
+
+        return {
+          date: `${weekday}`,
+          weather,
+          tempMin,
+          tempMax
+        };
+      });
+    })
+    .catch(err => {
+      console.error('天気情報の取得に失敗しました:', err);
+    });
+
+}
   },
   mounted() {
-    this.fetchMarkedDates()
+    this.fetchMarkedDates(),
+    this.fetchWeather()
   }
 }
 </script>
@@ -348,5 +415,13 @@ calculateTotalHours() {
 
 .calendar td:nth-child(7):not(.outside):not(.startMarked):not(.endMarked) {
   background-color: #e0f7fa; /* 土曜：薄水色 */
+}
+
+.temp-min {
+  color: #0288d1;
+}
+
+.temp-max {
+  color: #d32f2f;
 }
 </style>

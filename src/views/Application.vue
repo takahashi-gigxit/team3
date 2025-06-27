@@ -4,7 +4,7 @@
     <!-- ヘッダー -->
     <div class="header">
       <router-link class="back-link" :to="`/attendance/${selectdate}`">&lt;&lt; 戻る</router-link>
-      <router-link class="logout" to="/logout">ログアウト</router-link>
+
     </div>
 
     <h2 class="title">申請画面</h2>
@@ -38,7 +38,7 @@
     <!-- ダイアログ -->
     <div v-if="showDialog" class="dialog-overlay">
       <div class="dialog-box">
-        <h3 class="dialog-title">{{ currentType }}申請をしますか？</h3>
+        <h3 class="dialog-title">{{ currentTypeJapanese }}申請をしますか？</h3>
         <div class="dialog-actions">
           <button class="confirm-button" @click="submitApplication">はい</button>
           <button class="cancel-button" @click="showDialog = false">いいえ</button>

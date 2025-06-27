@@ -9,8 +9,8 @@
           <th>名前</th>
           <th>申請項目</th>
           <th>ステータス</th>
+          <th>理由</th>
           <th>操作</th>
-          <th>削除</th>
         </tr>
       </thead>
       <tbody>
@@ -23,6 +23,9 @@
             <td>{{ req.username }}</td>
             <td>{{ req.requestType }}</td>
             <td>{{ req.requestStatus }}</td>
+             <td>
+            {{ req.reason }}
+            </td>
             <td>
               <div>
                 <button @click="confirmAction(req, 'approve')" :disabled="req.requestStatus === '承認済み'">
@@ -33,9 +36,7 @@
                 </button>
               </div>
             </td>
-            <td>
-              <button @click="confirmDelete(req.deleteId, req.recordType)">削除</button>
-            </td>
+         
           </tr>
         </template>
       </tbody>

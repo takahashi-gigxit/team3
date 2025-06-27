@@ -1,10 +1,33 @@
 <template>
-  <div>
-    <h2>申請一覧（ユーザーID: {{ userId }}）</h2>
+  <div class="attendance-page">
+    <h2 class="title">申請一覧</h2>
+    <div class="header">
+       <router-link class="back-link" :to="backRoute">&lt;&lt; 戻る</router-link>
+    </div>
+
     <div v-if="applications.length === 0">申請がありません。</div>
-    <ul>
+    <div class="filters">
+      <!-- 申請内容セレクト -->
+      <label>
+        申請内容：
+        <select v-model="selectedFilter">
+          <option value="全て">全て</option>
+          <option v-for="type in filterTypes" :key="type" :value="type">{{ type }}</option>
+        </select>
+      </label>
+
+      <!-- 月セレクト -->
+      <label>
+        申請月：
+        <select v-model="selectedMonth">
+          <option value="全て">全て</option>
+          <option v-for="m in 12" :key="m" :value="String(m).padStart(2, '0')">{{ m }}月</option>
+        </select>
+      </label>
+    </div>
+    <ul class="no-bullet">
       <li
-        v-for="app in applications"
+        v-for="app in filteredApplications"
         :key="app.requestId"
         @click="goToAttendance(app.date)"
         style="cursor:pointer; padding: 10px; border-bottom: 1px solid #ccc;"
@@ -24,7 +47,11 @@ export default {
   data() {
     return {
       userId: null,
-      applications: []
+      applications: [],
+      selectedFilter: '全て',
+      selectedMonth: '全て',
+      filterTypes: ['有給', '欠勤', '遅刻', '早退'],
+       backRoute: '',
     }
   },
   mounted() {
@@ -34,11 +61,35 @@ export default {
         const user = JSON.parse(userStr)
         this.userId = user.id
         this.fetchApplications()
+        // 🐶←ここでルート分岐
+  if (user.category_id === 1) {
+    this.backRoute = '/admin';
+  } else if (user.category_id === 0) {
+    this.backRoute = '/main';
+  } else {
+    this.backRoute = '/'; // 不正なcategory_idのときなど
+  }
+  console.log("backroute")
+  console.log(this.backRoute)
       } catch (err) {
         console.error('ユーザー情報の解析に失敗しました:', err)
       }
     } else {
       console.warn('ユーザー情報が見つかりません')
+    }
+  },
+  computed: {
+    filteredApplications() {
+      return this.applications.filter(app => {
+        const contentMatch =
+          this.selectedFilter === '全て' || app.content.includes(this.selectedFilter);
+
+        const monthMatch =
+          this.selectedMonth === '全て' ||
+          (app.date && app.date.slice(5, 7) === this.selectedMonth); // dateが"2025-03-15" → "03"
+
+          return contentMatch && monthMatch;
+      });
     }
   },
   methods: {
@@ -52,7 +103,6 @@ export default {
         .then(data => {
           // APIから既に必要なデータが整形されているので、そのまま格納
           this.applications = data
-          console.log(data);
         })
         .catch(err => {
           console.error('申請一覧取得エラー:', err)
@@ -81,7 +131,7 @@ export default {
 }
 
 .back-link, .logout {
-  all: unset;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -136,5 +186,56 @@ export default {
 
 li:hover {
   background-color: #f0f0f0;
+}
+
+.title {
+  text-align: center;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.no-bullet {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filters select {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filters select:focus {
+  outline: none;
+  box-shadow: 0 0 3px rgba(0, 123, 255, 0.3);
 }
 </style>

@@ -2,7 +2,11 @@
   <div class="container">
     <router-link to="/master/home" class="back">&lt;&lt;戻る</router-link>
     <p class="logout-link"><router-link to="/logout">ログアウト</router-link></p>
-    <h2>申請</h2> <table>
+    <h2>申請</h2>
+    <div>
+      <v-text-field type="text" v-model="keyword" label="検索"></v-text-field>
+    </div>
+    <table>
       <thead>
         <tr>
           <th>日付</th>
@@ -16,7 +20,7 @@
         <tr v-if="applications.length === 0">
           <td colspan="5">現在データはありません</td>
         </tr>
-        <tr v-else v-for="item in applications" :key="item.id">
+        <tr v-else v-for="item in filtered" :key="item.id">
           <td>{{ item.date }}</td>
           <td>{{ item.username }}</td>
           <td>
@@ -37,13 +41,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios';
 
 const applications = ref([]);
 const showDialog = ref(false);
 const itemToDelete = ref(null);
 
+const keyword = ref('')
 const API_BASE_URL = 'http://localhost:8080';
 
 const fetchUsers = async () => {
@@ -146,6 +151,28 @@ const cancelDialog = () => {
   showDialog.value = false;
   itemToDelete.value = null;
 };
+
+
+const lowerKeywords = computed(() => {
+  return keyword.value.trim().toLowerCase().split(/\s+/).filter(k => k !== "");
+});
+
+const filtered = computed(() => {
+  if (lowerKeywords.value.length === 0) {
+    return applications.value;
+  }
+
+  return applications.value.filter(item => {
+    const name = item.username?.toLowerCase() || '';
+    const type = item.requestType?.toLowerCase() || '';
+    const date = item.date?.toLowerCase?.() || ''; // 念のため
+
+    return lowerKeywords.value.every(kw =>
+      name.includes(kw) || type.includes(kw) || date.includes(kw)
+    );
+  });
+});
+
 
 onMounted(() => {
   fetchAllApplications();
