@@ -7,9 +7,28 @@
     </div>
 
     <div v-if="applications.length === 0">申請がありません。</div>
+    <div class="filters">
+      <!-- 申請内容セレクト -->
+      <label>
+        申請内容：
+        <select v-model="selectedFilter">
+          <option value="全て">全て</option>
+          <option v-for="type in filterTypes" :key="type" :value="type">{{ type }}</option>
+        </select>
+      </label>
+
+      <!-- 月セレクト -->
+      <label>
+        申請月：
+        <select v-model="selectedMonth">
+          <option value="全て">全て</option>
+          <option v-for="m in 12" :key="m" :value="String(m).padStart(2, '0')">{{ m }}月</option>
+        </select>
+      </label>
+    </div>
     <ul class="no-bullet">
       <li
-        v-for="app in applications"
+        v-for="app in filteredApplications"
         :key="app.requestId"
         @click="goToAttendance(app.date)"
         style="cursor:pointer; padding: 10px; border-bottom: 1px solid #ccc;"
@@ -28,7 +47,10 @@ export default {
   data() {
     return {
       userId: null,
-      applications: []
+      applications: [],
+      selectedFilter: '全て',
+      selectedMonth: '全て',
+      filterTypes: ['有給', '欠勤', '遅刻', '早退'],
     }
   },
   mounted() {
@@ -43,6 +65,20 @@ export default {
       }
     } else {
       console.warn('ユーザー情報が見つかりません')
+    }
+  },
+  computed: {
+    filteredApplications() {
+      return this.applications.filter(app => {
+        const contentMatch =
+          this.selectedFilter === '全て' || app.content.includes(this.selectedFilter);
+
+        const monthMatch =
+          this.selectedMonth === '全て' ||
+          (app.date && app.date.slice(5, 7) === this.selectedMonth); // dateが"2025-03-15" → "03"
+
+          return contentMatch && monthMatch;
+      });
     }
   },
   methods: {
@@ -159,5 +195,36 @@ li:hover {
   justify-content: space-between;
   font-size: 14px;
   margin-bottom: 10px;
+}
+
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filters select {
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.filters select:focus {
+  outline: none;
+  box-shadow: 0 0 3px rgba(0, 123, 255, 0.3);
 }
 </style>
